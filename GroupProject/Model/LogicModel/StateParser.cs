@@ -95,11 +95,12 @@ namespace GroupProject.Model.LogicModel
 			var (inputCards, logicGateCards, outputCards) = parseCards();
 
 			Console.WriteLine("Inputs:");
-			Console.WriteLine ("A: " + inputCards[1].Output + inputCards[0].Output);
-			Console.WriteLine ("B: " + inputCards[3].Output + inputCards[2].Output);
+			Console.WriteLine("A: " + (inputCards[1].Output ? "1" : "0") + (inputCards[0].Output ? "1" : "0"));
+			Console.WriteLine("B: " + (inputCards[3].Output ? "1" : "0") + (inputCards[2].Output ? "1" : "0"));
 
 			Console.WriteLine("Outputs:");
-			Console.WriteLine("O: " + outputCards[0].Output + outputCards[1].Output + outputCards[2].Output);
+			Console.WriteLine("O: " + (outputCards[0].Output ? "1" : "0") + (outputCards[1].Output ? "1" : "0") + (outputCards[2].Output ? "1" : "0"));
+
 		}
 	}
 }
