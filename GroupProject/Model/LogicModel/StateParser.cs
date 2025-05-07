@@ -5,36 +5,6 @@ namespace GroupProject.Model.LogicModel
 {
 	public class StateParser
 	{
-		// string xml = @"
-		// <State>
-		// 	<Cards>
-		// 		<InputCards>
-		// 			<ICard id='0' value='true'/>
-		// 			<ICard id='1' value='true'/>
-		// 			<ICard id='2' value='true'/>
-		// 			<ICard id='3' value='true'/>
-		// 		</InputCards>
-
-		// 		<LogicGateCards>
-		// 			<!-- id, type, input cards IDs -->
-		// 			<LogicGate id='9' gateType='and' input1='5' input2='6'/>
-		// 			<LogicGate id='4' gateType='xor' input1='0' input2='2'/>
-		// 			<LogicGate id='5' gateType='and' input1='0' input2='2'/>
-		// 			<LogicGate id='8' gateType='xor' input1='5' input2='6'/>
-		// 			<LogicGate id='6' gateType='xor' input1='1' input2='3'/>
-		// 			<LogicGate id='7' gateType='and' input1='1' input2='3'/>
-		// 			<LogicGate id='10' gateType='or' input1='9' input2='7'/>
-		// 		</LogicGateCards>
-
-		// 		<OutputCards>
-		// 			<!-- id, value card ID -->
-		// 			<OCard id='11' input1='10'/>
-		// 			<OCard id='12' input1='8'/>
-		// 			<OCard id='13' input1='4'/>
-		// 		</OutputCards>
-		// 	</Cards>
-		// </State>";
-
 		string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
 
 		public (List<IOCard> inputCards, List<LogicGateCard> logicGateCards, List<OutputCard> outputCards) parseCards()
@@ -120,24 +90,16 @@ namespace GroupProject.Model.LogicModel
 			return (inputCards, logicGateCards, outputCards);
 		}
 
-		public void PrintCards()
+		public void TwoBitAdderResultToConsole()
 		{
 			var (inputCards, logicGateCards, outputCards) = parseCards();
 
-			foreach (var card in inputCards)
-			{
-				Console.WriteLine($"Input Card ID: {card.Id}, Value: {card.Output}");
-			}
+			Console.WriteLine("Inputs:");
+			Console.WriteLine ("A: " + inputCards[1].Output + inputCards[0].Output);
+			Console.WriteLine ("B: " + inputCards[3].Output + inputCards[2].Output);
 
-			foreach (var card in logicGateCards)
-			{
-				Console.WriteLine($"Logic Gate Card ID: {card.Id}, Type: {card.GateType}, Input1: {card.Input1}, Input2: {card.Input2}, Output: {card.Output}");
-			}
-
-			foreach (var card in outputCards)
-			{
-				Console.WriteLine($"Output Card ID: {card.Id}, Input1: {card.Input1}, Value: {card.Output}");
-			}
+			Console.WriteLine("Outputs:");
+			Console.WriteLine("O: " + outputCards[0].Output + outputCards[1].Output + outputCards[2].Output);
 		}
 	}
 }
