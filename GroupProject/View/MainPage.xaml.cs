@@ -22,6 +22,6 @@ public partial class MainPage : ContentPage
 
 		Model.LogicModel.StateParser stateParser = new Model.LogicModel.StateParser();
 		stateParser.parseCards();
-		stateParser.PrintCards();
+		stateParser.TwoBitAdderResultToConsole(); // Temporary for printing the result of the 2 bit adder sample state
 	}
 }
