@@ -1,42 +1,45 @@
 using System.Xml.Linq;
 
+
 namespace GroupProject.Model.LogicModel
 {
 	public class StateParser
 	{
-		string xml = @"
-		<State>
-			<Cards>
-				<InputCards>
-					<ICard id='0' value='true'/>
-					<ICard id='1' value='true'/>
-					<ICard id='2' value='true'/>
-					<ICard id='3' value='true'/>
-				</InputCards>
+		// string xml = @"
+		// <State>
+		// 	<Cards>
+		// 		<InputCards>
+		// 			<ICard id='0' value='true'/>
+		// 			<ICard id='1' value='true'/>
+		// 			<ICard id='2' value='true'/>
+		// 			<ICard id='3' value='true'/>
+		// 		</InputCards>
 
-				<LogicGateCards>
-					<!-- id, type, input cards IDs -->
-					<LogicGate id='9' gateType='and' input1='5' input2='6'/>
-					<LogicGate id='4' gateType='xor' input1='0' input2='2'/>
-					<LogicGate id='5' gateType='and' input1='0' input2='2'/>
-					<LogicGate id='8' gateType='xor' input1='5' input2='6'/>
-					<LogicGate id='6' gateType='xor' input1='1' input2='3'/>
-					<LogicGate id='7' gateType='and' input1='1' input2='3'/>
-					<LogicGate id='10' gateType='or' input1='9' input2='7'/>
-				</LogicGateCards>
+		// 		<LogicGateCards>
+		// 			<!-- id, type, input cards IDs -->
+		// 			<LogicGate id='9' gateType='and' input1='5' input2='6'/>
+		// 			<LogicGate id='4' gateType='xor' input1='0' input2='2'/>
+		// 			<LogicGate id='5' gateType='and' input1='0' input2='2'/>
+		// 			<LogicGate id='8' gateType='xor' input1='5' input2='6'/>
+		// 			<LogicGate id='6' gateType='xor' input1='1' input2='3'/>
+		// 			<LogicGate id='7' gateType='and' input1='1' input2='3'/>
+		// 			<LogicGate id='10' gateType='or' input1='9' input2='7'/>
+		// 		</LogicGateCards>
 
-				<OutputCards>
-					<!-- id, value card ID -->
-					<OCard id='11' input1='10'/>
-					<OCard id='12' input1='8'/>
-					<OCard id='13' input1='4'/>
-				</OutputCards>
-			</Cards>
-		</State>";
+		// 		<OutputCards>
+		// 			<!-- id, value card ID -->
+		// 			<OCard id='11' input1='10'/>
+		// 			<OCard id='12' input1='8'/>
+		// 			<OCard id='13' input1='4'/>
+		// 		</OutputCards>
+		// 	</Cards>
+		// </State>";
+
+		string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
 
 		public (List<IOCard> inputCards, List<LogicGateCard> logicGateCards, List<OutputCard> outputCards) parseCards()
 		{
-			XDocument doc = XDocument.Parse(xml);
+			XDocument doc = XDocument.Load(filepath);
 
 			// Parse Input Cards
 			List<IOCard> inputCards = doc.Descendants("ICard")

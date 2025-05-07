@@ -19,5 +19,9 @@ public partial class MainPage : ContentPage
 			CounterBtn.Text = $"Clicked {count} times";
 
 		SemanticScreenReader.Announce(CounterBtn.Text);
+
+		Model.LogicModel.StateParser stateParser = new Model.LogicModel.StateParser();
+		stateParser.parseCards();
+		stateParser.PrintCards();
 	}
 }
