@@ -3,7 +3,7 @@
 public class TestingTest
 {
     [Fact]
-    public void Test1()
+    public void TeestingTest()
     {
 		Assert.True(true);
     }
