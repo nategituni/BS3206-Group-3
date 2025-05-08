@@ -5,11 +5,24 @@ namespace GroupProject.Model.LogicModel
 {
 	public class StateParser
 	{
-		string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+		private readonly XDocument _doc;
+
+		// Default constructor loads the XML file from the current directory
+		public StateParser()
+		{
+			string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+			_doc = XDocument.Load(filepath);
+		}
+
+		// Constructor for Testing purposes, allowing to pass a different XDocument
+		public StateParser(XDocument doc)
+		{
+			_doc = doc;
+		}
 
 		public (List<IOCard> inputCards, List<LogicGateCard> logicGateCards, List<OutputCard> outputCards) parseCards()
 		{
-			XDocument doc = XDocument.Load(filepath);
+			XDocument doc = _doc;
 
 			// Parse Input Cards
 			List<IOCard> inputCards = doc.Descendants("ICard")
