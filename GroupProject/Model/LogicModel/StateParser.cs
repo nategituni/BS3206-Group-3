@@ -102,18 +102,5 @@ namespace GroupProject.Model.LogicModel
 			
 			return (inputCards, logicGateCards, outputCards);
 		}
-
-		public void TwoBitAdderResultToConsole()
-		{
-			var (inputCards, logicGateCards, outputCards) = parseCards();
-
-			Console.WriteLine("Inputs:");
-			Console.WriteLine("A: " + (inputCards[1].Output ? "1" : "0") + (inputCards[0].Output ? "1" : "0"));
-			Console.WriteLine("B: " + (inputCards[3].Output ? "1" : "0") + (inputCards[2].Output ? "1" : "0"));
-
-			Console.WriteLine("Outputs:");
-			Console.WriteLine("O: " + (outputCards[0].Output ? "1" : "0") + (outputCards[1].Output ? "1" : "0") + (outputCards[2].Output ? "1" : "0"));
-
-		}
 	}
 }
