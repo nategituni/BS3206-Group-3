@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<ContentView
+    x:Class="GroupProject.View.CardView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <AbsoluteLayout>
+        <!-- Draggable card body -->
+        <Frame
+            x:Name="CardFrame"
+            CornerRadius="12"
+            BackgroundColor="BlanchedAlmond"
+            HasShadow="True"
+            Padding="8"
+            AbsoluteLayout.LayoutBounds="0,0,1,1"
+            AbsoluteLayout.LayoutFlags="All">
+            <Frame.GestureRecognizers>
+                <PanGestureRecognizer PanUpdated="OnPanUpdated" />
+            </Frame.GestureRecognizers>
+
+            <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
+                <!-- Label -->
+                <Label
+                    Text="{Binding DisplayName}"
+                    TextColor="Black"
+                    FontAttributes="Bold"
+                    HorizontalOptions="Center"
+                    Grid.ColumnSpan="3" />
+
+                <!-- Input port 1 -->
+                <Button
+                    x:Name="In1"
+                    WidthRequest="12" HeightRequest="12"
+                    MinimumWidthRequest="12" MinimumHeightRequest="12"
+                    Padding="0"
+                    CornerRadius="6"
+                    BackgroundColor="Gray"
+                    BorderWidth="0"
+                    Grid.Row="1" Grid.Column="0" VerticalOptions="Start"
+                    Released="OnIn1Pressed" />
+
+                <!-- Input port 2 -->
+                <Button
+                    x:Name="In2"
+                    WidthRequest="12" HeightRequest="12"
+                    MinimumWidthRequest="12" MinimumHeightRequest="12"
+                    Padding="0"
+                    CornerRadius="6"
+                    BackgroundColor="Gray"
+                    BorderWidth="0"
+                    Grid.Row="1" Grid.Column="0" VerticalOptions="End"
+                    Released="OnIn2Pressed" />
+
+                <!-- Output port -->
+                <Button
+                    x:Name="Out"
+                    WidthRequest="12" HeightRequest="12"
+                    MinimumWidthRequest="12" MinimumHeightRequest="12"
+                    Padding="0"
+                    CornerRadius="6"
+                    BackgroundColor="Black"
+                    Grid.Row="1" Grid.Column="2"
+                    VerticalOptions="Center"
+                    Pressed="OnOutPressed" />
+            </Grid>
+        </Frame>
+    </AbsoluteLayout>
+</ContentView>
