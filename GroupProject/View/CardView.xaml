@@ -5,7 +5,12 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
+	<ContentView.GestureRecognizers>
+		<TapGestureRecognizer Tapped="OnCardTapped" NumberOfTapsRequired="1"/>
+	</ContentView.GestureRecognizers>
+
     <AbsoluteLayout>
+
         <!-- Draggable card body -->
         <Frame
             x:Name="CardFrame"
@@ -26,7 +31,68 @@
                     TextColor="Black"
                     FontAttributes="Bold"
                     HorizontalOptions="Center"
-                    Grid.ColumnSpan="3" />
+                    Grid.ColumnSpan="3">
+					<Label.Triggers>
+						<DataTrigger TargetType="Label" Binding="{Binding GateType}" Value="Input">
+							<Setter Property="IsVisible" Value="False" />
+						</DataTrigger>
+						<DataTrigger TargetType="Label" Binding="{Binding GateType}" Value="Output">
+							<Setter Property="IsVisible" Value="False"/>
+						</DataTrigger>
+					</Label.Triggers>
+				</Label>
+
+				<Label
+					x:Name="OutputValueLabel"
+					Text="{Binding CurrentValue}"
+					x:FieldModifier="public"
+					TextColor="Black"
+					HorizontalOptions="Center"
+					Grid.ColumnSpan="3"
+					IsVisible="False">
+					<Label.Triggers>
+						<DataTrigger TargetType="Label" Binding="{Binding GateType}" Value="Output">
+							<Setter Property="IsVisible" Value="True"/>
+						</DataTrigger>
+					</Label.Triggers>
+				</Label>
+
+
+				<!-- Centered Container for Input Value Label and Switch -->
+				<StackLayout HorizontalOptions="Start" 
+							VerticalOptions="Center"
+							Spacing="1"
+							Grid.ColumnSpan="3">
+							
+					
+					<!-- Input value label -->
+					<Label x:Name="InputValueLabel"
+						Text="0"
+						HorizontalOptions="Center"
+						Grid.ColumnSpan="3"
+						TextColor="Black"
+						IsVisible="False">
+					<Label.Triggers>
+						<DataTrigger TargetType="Label" Binding="{Binding GateType}" Value="Input">
+						<Setter Property="IsVisible" Value="True"/>
+						</DataTrigger>
+					</Label.Triggers>
+					</Label>
+					
+					<!-- Input card picker -->
+					<Switch x:Name="InputValueSwitch"
+							Toggled="OnInputValueToggled"
+							HorizontalOptions="Center"
+							Grid.ColumnSpan="3"
+							IsVisible="False">
+					<Switch.Triggers>
+						<DataTrigger TargetType="Switch" Binding="{Binding GateType}" Value="Input">
+						<Setter Property="IsVisible" Value="True"/>
+						</DataTrigger>
+					</Switch.Triggers>
+					</Switch>
+					
+				</StackLayout>
 
                 <!-- Input port 1 -->
                 <Button
@@ -38,7 +104,13 @@
                     BackgroundColor="Gray"
                     BorderWidth="0"
                     Grid.Row="1" Grid.Column="0" VerticalOptions="Start"
-                    Released="OnIn1Pressed" />
+                    Released="OnIn1Pressed">
+					<Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Input">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+                    </Button.Triggers>
+				</Button>
 
                 <!-- Input port 2 -->
                 <Button
@@ -50,7 +122,19 @@
                     BackgroundColor="Gray"
                     BorderWidth="0"
                     Grid.Row="1" Grid.Column="0" VerticalOptions="End"
-                    Released="OnIn2Pressed" />
+                    Released="OnIn2Pressed">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Input">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+						<DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Not">
+							<Setter Property="IsVisible" Value="False" />
+						</DataTrigger>
+						<DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Output">
+							<Setter Property="IsVisible" Value="False" />
+						</DataTrigger>
+                    </Button.Triggers>
+				</Button>
 
                 <!-- Output port -->
                 <Button
@@ -60,10 +144,54 @@
                     Padding="0"
                     CornerRadius="6"
                     BackgroundColor="Black"
-                    Grid.Row="1" Grid.Column="2"
+                    Grid.Row="1" Grid.Column="3"
                     VerticalOptions="Center"
-                    Pressed="OnOutPressed" />
+					VisualElement.ZIndex="3"
+                    Pressed="OnOutPressed">
+					<Button.Triggers>
+						<DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Output">
+							<Setter Property="IsVisible" Value="False" />
+						</DataTrigger>
+						<DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Input">
+							<Setter Property="IsVisible" Value="False" />
+						</DataTrigger>
+					</Button.Triggers>
+				</Button>
+
+				<!-- Input Card Output port for visual issue-->
+                <Button
+                    x:Name="InputCardOut"
+                    WidthRequest="12" HeightRequest="12"
+                    MinimumWidthRequest="12" MinimumHeightRequest="12"
+                    Padding="0"
+                    CornerRadius="6"
+                    BackgroundColor="Black"
+                    Grid.Row="0" Grid.Column="3"
+                    VerticalOptions="Center"
+					VisualElement.ZIndex="3"
+                    Pressed="OnOutPressed"
+					IsVisible="False">
+					<Button.Triggers>
+						<DataTrigger TargetType="Button" Binding="{Binding GateType}" Value="Input">
+							<Setter Property="IsVisible" Value="True" />
+						</DataTrigger>
+					</Button.Triggers>
+				</Button>
             </Grid>
         </Frame>
+
+		<!-- Delete Button -->
+		<Button
+			x:Name="DeleteButton"
+			Text="X"
+			BackgroundColor="Red"
+			TextColor="White"
+            CornerRadius="12"
+            WidthRequest="24"
+            HeightRequest="24"
+            HorizontalOptions="End"
+            VerticalOptions="Start"
+            IsVisible="False"
+            Clicked="OnDeleteButtonClicked" />
     </AbsoluteLayout>
 </ContentView>
