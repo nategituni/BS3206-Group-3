@@ -174,20 +174,20 @@ public partial class PuzzlePage : ContentPage
 		if (gateType == "Input")
 		{
 			cv.OutputPortTapped += OnOutTapped;
-			xmlService.AddInputCard(id, false);
+			xmlService.AddInputCard(id, false, vm.X, vm.Y);
 		}
 		
 		else if (gateType == "Output")
 		{
 			cv.InputPortTapped += OnInTapped;
-			xmlService.AddOutputCard(id, 0);
+			xmlService.AddOutputCard(id, 0, vm.X, vm.Y);
 		}
 
 		else
 		{
 			cv.InputPortTapped += OnInTapped;
 			cv.OutputPortTapped += OnOutTapped;
-			xmlService.AddLogicGateCard(id, gateType, 0, 0);
+			xmlService.AddLogicGateCard(id, gateType, 0, 0, vm.X, vm.Y);
 		}
 
         _cardMap[id] = cv;
@@ -286,6 +286,14 @@ public partial class PuzzlePage : ContentPage
 
         foreach (var c in _connections.Where(c => c.SourceCardId == id || c.TargetCardId == id))
             UpdateConnectionLine(c);
+
+		var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+		double newX = (double)bounds.X;
+		double newY = (double)bounds.Y;
+
+		var xmlService = new XmlStateService(statePath);
+
+		xmlService.UpdateCardPosition(id, newX, newY);
 
         UpdateCanvasSize();
     }
@@ -778,7 +786,7 @@ public partial class PuzzlePage : ContentPage
 			}
 		}
 
-		// Kahn's algorithm: enqueue all cards that have zero in-degree.
+		// Start with cards that have zero in-degree.
 		Queue<CardInfo> ready = new Queue<CardInfo>(cards.Where(c => inDegree[c.OldId] == 0));
 		List<CardInfo> sorted = new List<CardInfo>();
 
@@ -855,7 +863,6 @@ public partial class PuzzlePage : ContentPage
 		xmlService.Save();
 
 		// 5. Update the in‑memory CardView objects on your canvas.
-		// (Assuming you have a _cardMap keyed by the old ID or you can iterate through Canvas.Children)
 		// Here we update each CardView's BindingContext (a CardViewModel).
 		foreach (var cardView in _cardMap.Values)
 		{
@@ -868,7 +875,7 @@ public partial class PuzzlePage : ContentPage
 			}
 		}
 
-		// Optionally, rebuild _cardMap keyed by the new ID:
+
 		var newCardMap = new Dictionary<int, CardView>();
 		foreach (var card in _cardMap.Values)
 		{
@@ -882,4 +889,14 @@ public partial class PuzzlePage : ContentPage
 
 		xmlService.PrintStateFile();
 	}
+
+
+	private void loadInitialCanvas()
+	{
+		Point spawnStart = new Point(50,50);
+
+
+	}
+
+	
 }

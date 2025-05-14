@@ -38,7 +38,7 @@ public class XmlStateService
     }
 
     // Adds an input card element
-    public void AddInputCard(int id, bool value)
+    public void AddInputCard(int id, bool value, double xPos, double yPos)
     {
         var inputCardsContainer = _doc.Descendants("InputCards").FirstOrDefault();
 
@@ -46,7 +46,9 @@ public class XmlStateService
         {
             inputCardsContainer.Add(new XElement("ICard",
                 new XAttribute("id", id),
-                new XAttribute("value", value.ToString().ToLower())));
+                new XAttribute("value", value.ToString().ToLower()),
+				new XAttribute("xPos", xPos.ToString().ToLower()),
+				new XAttribute("yPos", yPos.ToString().ToLower())));
             Save();
         }
     }
@@ -69,7 +71,7 @@ public class XmlStateService
 	}
 
     // Adds a logic gate card element with two inputs.
-    public void AddLogicGateCard(int id, string gateType, int input1Id, int input2Id)
+    public void AddLogicGateCard(int id, string gateType, int input1Id, int input2Id, double xPos, double yPos)
     {
         var logicGateCardsContainer = _doc.Descendants("LogicGateCards").FirstOrDefault();
 
@@ -79,7 +81,9 @@ public class XmlStateService
                 new XAttribute("id", id),
                 new XAttribute("gateType", gateType),
                 new XAttribute("input1", input1Id),
-                new XAttribute("input2", input2Id)));
+                new XAttribute("input2", input2Id),
+				new XAttribute("xPos", xPos.ToString().ToLower()),
+				new XAttribute("yPos", yPos.ToString().ToLower())));
             Save();
         }
     }
@@ -102,7 +106,7 @@ public class XmlStateService
 	}
 
     // Adds an output card element which references one input.
-    public void AddOutputCard(int id, int input1Id)
+    public void AddOutputCard(int id, int input1Id, double xPos, double yPos)
     {
         var outputCardsContainer = _doc.Descendants("OutputCards").FirstOrDefault();
 
@@ -110,7 +114,9 @@ public class XmlStateService
         {
             outputCardsContainer.Add(new XElement("OCard",
                 new XAttribute("id", id),
-                new XAttribute("input1", input1Id)));
+                new XAttribute("input1", input1Id),
+				new XAttribute("xPos", xPos.ToString().ToLower()),
+				new XAttribute("yPos", yPos.ToString().ToLower())));
             Save();
         }
     }
@@ -176,11 +182,30 @@ public class XmlStateService
 		}
 	}
 
+
+	public void UpdateCardPosition(int id, double xPos, double yPos)
+	{
+		// Search for the card element in all possible card groups.
+		// Change the element names if necessary to match your XML.
+		var cardElement = _doc.Descendants("ICard")
+							.Concat(_doc.Descendants("OCard"))
+							.Concat(_doc.Descendants("LogicGate"))
+							.FirstOrDefault(x => (int)x.Attribute("id") == id);
+
+		if (cardElement != null)
+		{
+			cardElement.SetAttributeValue("xPos", xPos.ToString());
+			cardElement.SetAttributeValue("yPos", yPos.ToString());
+			Save();
+		}
+	}
+
+
 	    // Clear the state file.
 	public void ClearStateFile()
 	{
 		_doc = new XDocument(
-			new XElement("GameState",
+			new XElement("State",
 				new XElement("InputCards"),
 				new XElement("LogicGateCards"),
 				new XElement("OutputCards")
