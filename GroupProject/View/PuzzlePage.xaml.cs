@@ -40,6 +40,8 @@ public partial class PuzzlePage : ContentPage
     {
         InitializeComponent();
 
+		// InitizaliseFilewaterHere Michael
+
         foreach (var g in Enum.GetValues<GateTypeEnum>())
         {
             var button = new Button
