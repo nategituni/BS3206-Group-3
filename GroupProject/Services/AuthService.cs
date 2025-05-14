@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using GroupProject.Models;
 
 namespace GroupProject.Services
 {
@@ -13,14 +14,14 @@ namespace GroupProject.Services
             string hashedPassword = HashHelper.HashPassword(password);
 
             string query = @"
-        INSERT INTO Users (FullName, Email, PasswordHash, IsMfaVerified, Role)
-        VALUES (@FullName, @Email, @PasswordHash, @IsMfaVerified, @Role)";
+                INSERT INTO Users (FullName, Email, PasswordHash, IsMfaVerified, Role)
+                VALUES (@FullName, @Email, @PasswordHash, @IsMfaVerified, @Role)";
 
             SqlCommand cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@FullName", fullName);
             cmd.Parameters.AddWithValue("@Email", email);
             cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
-            cmd.Parameters.AddWithValue("@IsMfaVerified", true); // Change to false if you want real MFA
+            cmd.Parameters.AddWithValue("@IsMfaVerified", true);
             cmd.Parameters.AddWithValue("@Role", "User");
 
             try
@@ -35,7 +36,6 @@ namespace GroupProject.Services
                 return false;
             }
         }
-
 
         public static async Task<bool> ValidateLoginAsync(string email, string password)
         {
@@ -81,6 +81,7 @@ namespace GroupProject.Services
 
             return result?.ToString();
         }
+
         public static async Task UpdateProfilePictureAsync(string email, string base64Image)
         {
             using var conn = new SqlConnection(connectionString);
@@ -103,6 +104,65 @@ namespace GroupProject.Services
             return result != null ? Convert.ToInt32(result) : -1;
         }
 
+        public static async Task<User> GetUserProfileAsync(string email)
+        {
+            var user = new User();
 
+            using var conn = new SqlConnection(connectionString);
+            await conn.OpenAsync();
+
+            var cmd = new SqlCommand("SELECT FullName, ProfilePicture, Bio FROM Users WHERE Email = @Email", conn);
+            cmd.Parameters.AddWithValue("@Email", email);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                user.FullName = reader["FullName"]?.ToString();
+                user.ProfilePicture = reader["ProfilePicture"]?.ToString();
+                user.Bio = reader["Bio"]?.ToString();
+            }
+
+            return user;
+        }
+
+        public static async Task UpdateUserBioAsync(string email, string bio)
+        {
+            using var conn = new SqlConnection(connectionString);
+            await conn.OpenAsync();
+
+            var cmd = new SqlCommand("UPDATE Users SET Bio = @Bio WHERE Email = @Email", conn);
+            cmd.Parameters.AddWithValue("@Bio", (object)bio ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Email", email);
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public static async Task UpdateUserFullNameAsync(string email, string fullName)
+        {
+            using var conn = new SqlConnection(connectionString);
+            await conn.OpenAsync();
+
+            var cmd = new SqlCommand("UPDATE Users SET FullName = @FullName WHERE Email = @Email", conn);
+            cmd.Parameters.AddWithValue("@FullName", fullName);
+            cmd.Parameters.AddWithValue("@Email", email);
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+        public static async Task<bool> SendMfaCodeAsync(string email)
+        {
+            string code = new Random().Next(100000, 999999).ToString();
+            Preferences.Set("MfaCode", code);
+            Preferences.Set("MfaEmail", email);
+
+            return await EmailService.SendMfaCodeEmailAsync(email, code);
+        }
+
+        public static async Task<bool> VerifyMfaCodeAsync(string email, string code)
+        {
+            string storedCode = Preferences.Get("MfaCode", "");
+            string storedEmail = Preferences.Get("MfaEmail", "");
+
+            return storedEmail == email && storedCode == code;
+        }
     }
 }
