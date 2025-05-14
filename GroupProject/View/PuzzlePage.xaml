@@ -17,6 +17,16 @@
             Order="Primary"
             Priority="1"
             Clicked="Load_Clicked" />
+		<ToolbarItem
+			Text="Clear"
+			Order="Primary"
+			Priority="2"
+			Clicked="Clear_Clicked" />
+		<ToolbarItem
+			Text="Simulate"
+			Order="Primary"
+			Priority="3"
+			Clicked="Simulate_Clicked" />
     </ContentPage.ToolbarItems>
 
     <Grid>

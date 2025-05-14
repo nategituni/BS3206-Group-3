@@ -8,5 +8,9 @@ public enum GateTypeEnum
     Xor,
     Nand,
     Nor,
-    Xnor
+    Xnor,
+
+	Input,
+
+	Output,
 }

@@ -1,4 +1,7 @@
-﻿namespace GroupProject.View;
+﻿using GroupProject.Services;
+using GroupProject.ViewModel;
+
+namespace GroupProject.View;
 
 public partial class CardView : ContentView
 {
@@ -23,6 +26,68 @@ public partial class CardView : ContentView
     ///     Output port was tapped.
     /// </summary>
     public event EventHandler OutputPortTapped;
+
+
+	// Delete button
+	public event EventHandler DeleteRequested;
+
+	private readonly string statePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+
+	private async void OnCardTapped(object sender, EventArgs e)
+	{	
+		if (Parent is Layout layout)
+		{
+			layout.Children.Remove(this);
+			layout.Children.Add(this);
+		}
+
+		DeleteButton.IsVisible = true;
+
+		await Task.Delay(1000);
+
+		DeleteButton.IsVisible = false;
+	}
+
+	private void OnInputValueToggled(object sender, ToggledEventArgs e)
+	{
+		InputValueLabel.Text = e.Value ? "1" : "0";
+
+		var xmlService = new XmlStateService(statePath);
+
+		// Retrieve the card's ID using its BindingContext.
+		if (BindingContext is CardViewModel viewModel)
+		{
+			int cardId = viewModel.Id;
+			// Update the input card in the XML using the card's id and new value.
+			xmlService.UpdateInputCardValue(cardId, e.Value);
+		}
+	}
+
+	private void OnDeleteButtonClicked(object sender, EventArgs e)
+	{
+		DeleteRequested?.Invoke(this, EventArgs.Empty);
+
+		    // Retrieve the view model from the BindingContext
+		if (BindingContext is CardViewModel viewModel)
+		{
+			int cardID = viewModel.Id;
+			var xmlService = new XmlStateService(statePath);
+
+			// Delete from the XML file based on the gate type.
+			if (viewModel.GateType.Equals("Input", StringComparison.OrdinalIgnoreCase))
+			{
+				xmlService.DeleteInputCard(cardID);
+			}
+			else if (viewModel.GateType.Equals("Output", StringComparison.OrdinalIgnoreCase))
+			{
+				xmlService.DeleteOutputCard(cardID);
+			}
+			else // assume any other type is a logic gate
+			{
+				xmlService.DeleteLogicGateCard(cardID);
+			}
+		}
+	}
 
     // Drag the card by panning the frame
     private void OnPanUpdated(object sender, PanUpdatedEventArgs e)
