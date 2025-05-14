@@ -6,4 +6,6 @@ public class Connection
         public int TargetCardId { get; set; }
         public int TargetInputIndex { get; set; }
         public Microsoft.Maui.Controls.Shapes.Line LineShape { get; set; }
+
+		public ContentView HitArea {get; set;}
 }
