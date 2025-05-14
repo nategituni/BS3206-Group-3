@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GroupProject.View.RegisterPage"
+             Title="Register">
+
+    <VerticalStackLayout Padding="20" Spacing="15">
+        <Entry Placeholder="Full Name" Text="{Binding FullName}" />
+        <Entry Placeholder="Email" Text="{Binding Email}" />
+        <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+        <Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
+
+        <Label Text="{Binding StatusMessage}" TextColor="Red" />
+
+        <Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
+        <Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
+    </VerticalStackLayout>
+
+</ContentPage>
+

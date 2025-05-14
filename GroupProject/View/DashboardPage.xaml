@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GroupProject.View.DashboardPage"
+             Title="Dashboard">
+
+    <VerticalStackLayout Padding="20" Spacing="15">
+        <Label Text="Welcome to the Dashboard"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               FontSize="24" />
+
+        <Button Text="My Account" Command="{Binding GoToAccountCommand}" />
+    </VerticalStackLayout>
+
+</ContentPage>
+
