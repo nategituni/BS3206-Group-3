@@ -6,6 +6,7 @@ using System.Windows.Input;
 using Microsoft.Maui.Storage;
 using GroupProject.Services;
 using GroupProject.Models;
+using GroupProject.View;
 
 namespace GroupProject.ViewModels
 {
@@ -15,43 +16,58 @@ namespace GroupProject.ViewModels
         public ImageSource ProfileImageSource
         {
             get => _profileImageSource;
-            set
-            {
-                _profileImageSource = value;
-                OnPropertyChanged();
-            }
+            set { _profileImageSource = value; OnPropertyChanged(); }
+        }
+
+        private string _fullName;
+        public string FullName
+        {
+            get => _fullName;
+            set { _fullName = value; OnPropertyChanged(); }
+        }
+
+        private string _bio;
+        public string Bio
+        {
+            get => _bio;
+            set { _bio = value; OnPropertyChanged(); }
         }
 
         public ObservableCollection<Puzzle> Puzzles { get; set; } = new();
 
         public ICommand UpdatePictureCommand { get; }
+        public ICommand EditProfileCommand { get; }
+        public ICommand SaveProfileCommand { get; }
+        public ICommand ClosePopupCommand { get; }
         public ICommand DeletePuzzleCommand { get; }
 
         public AccountViewModel()
         {
             UpdatePictureCommand = new Command(async () => await UpdatePictureAsync());
+            EditProfileCommand = new Command(OpenEditProfilePopup);
+            SaveProfileCommand = new Command(async () => await SaveProfileAsync());
+            ClosePopupCommand = new Command(CloseEditProfilePopup);
             DeletePuzzleCommand = new Command<Puzzle>(async (puzzle) => await DeletePuzzleAsync(puzzle));
 
-            LoadProfileImageAsync();
+            LoadProfileDataAsync();
             LoadPuzzlesAsync();
         }
 
-        private async void LoadProfileImageAsync()
+        private async void LoadProfileDataAsync()
         {
             try
             {
                 string email = Preferences.Get("UserEmail", null);
-                if (string.IsNullOrWhiteSpace(email))
-                {
-                    await Shell.Current.DisplayAlert("Error", "Email not found in Preferences", "OK");
-                    ProfileImageSource = "default_avatar.png";
-                    return;
-                }
+                if (string.IsNullOrWhiteSpace(email)) return;
 
-                var base64 = await AuthService.GetProfilePictureAsync(email);
-                if (!string.IsNullOrEmpty(base64))
+                var user = await AuthService.GetUserProfileAsync(email);
+
+                FullName = user.FullName;
+                Bio = user.Bio ?? "";
+
+                if (!string.IsNullOrEmpty(user.ProfilePicture))
                 {
-                    byte[] imageBytes = Convert.FromBase64String(base64);
+                    byte[] imageBytes = Convert.FromBase64String(user.ProfilePicture);
                     ProfileImageSource = ImageSource.FromStream(() => new MemoryStream(imageBytes));
                 }
                 else
@@ -61,9 +77,38 @@ namespace GroupProject.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Crash", $"Failed to load profile image: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Error", $"Failed to load profile data: {ex.Message}", "OK");
                 ProfileImageSource = "default_avatar.png";
             }
+        }
+
+        private async Task SaveProfileAsync()
+        {
+            try
+            {
+                string email = Preferences.Get("UserEmail", null);
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    await AuthService.UpdateUserBioAsync(email, Bio);
+                    await AuthService.UpdateUserFullNameAsync(email, FullName);
+                    await Shell.Current.DisplayAlert("Success", "Profile updated.", "OK");
+                    CloseEditProfilePopup();
+                }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Error", $"Failed to save profile: {ex.Message}", "OK");
+            }
+        }
+
+        private void OpenEditProfilePopup()
+        {
+            Shell.Current.Navigation.PushModalAsync(new EditProfilePopup(this));
+        }
+
+        private void CloseEditProfilePopup()
+        {
+            Shell.Current.Navigation.PopModalAsync();
         }
 
         private async Task UpdatePictureAsync()
@@ -125,9 +170,7 @@ namespace GroupProject.ViewModels
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }
