@@ -4,17 +4,22 @@
              x:Class="GroupProject.View.RegisterPage"
              Title="Register">
 
-    <VerticalStackLayout Padding="20" Spacing="15">
-        <Entry Placeholder="Full Name" Text="{Binding FullName}" />
-        <Entry Placeholder="Email" Text="{Binding Email}" />
-        <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
-        <Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
+	<VerticalStackLayout Padding="20" Spacing="15">
+		<Entry Placeholder="Full Name" Text="{Binding FullName}" />
+		<Entry Placeholder="Email" Text="{Binding Email}" />
+		<Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+		<Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
 
-        <Label Text="{Binding StatusMessage}" TextColor="Red" />
+		<Label Text="{Binding StatusMessage}" TextColor="Red" />
 
-        <Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
-        <Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
-    </VerticalStackLayout>
+		<Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
 
+		<!-- MFA Code Entry -->
+		<Entry Placeholder="Enter MFA Code" Text="{Binding MfaCode}" IsVisible="{Binding IsMfaVisible}" />
+		<Button Text="Verify Code" Command="{Binding VerifyMfaCommand}"
+                IsEnabled="{Binding IsVerifyMfaEnabled}"
+                IsVisible="{Binding IsMfaVisible}" />
+
+		<Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
+	</VerticalStackLayout>
 </ContentPage>
-

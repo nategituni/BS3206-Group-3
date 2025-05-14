@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GroupProject.View.EditProfilePopup"
+             BackgroundColor="#80000080">
+
+    <Grid VerticalOptions="Center" HorizontalOptions="Center">
+
+        <Frame BackgroundColor="White"
+               CornerRadius="15"
+               Padding="20"
+               WidthRequest="300"
+               HasShadow="True">
+
+            <VerticalStackLayout Spacing="15">
+
+                <Label Text="Edit Profile"
+                       FontAttributes="Bold"
+                       FontSize="20"
+                       HorizontalOptions="Center" />
+
+                <Entry Text="{Binding FullName}" Placeholder="Full Name" />
+
+                <Editor Text="{Binding Bio}" Placeholder="Bio" AutoSize="TextChanges" />
+
+                <Button Text="Change Profile Picture"
+                        Command="{Binding UpdatePictureCommand}" />
+
+                <Button Text="Save Changes"
+                        Command="{Binding SaveProfileCommand}" />
+
+                <Button Text="Cancel"
+                        Command="{Binding ClosePopupCommand}"
+                        BackgroundColor="LightGray"
+                        TextColor="Black" />
+
+            </VerticalStackLayout>
+
+        </Frame>
+
+    </Grid>
+
+</ContentPage>

@@ -3,12 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\Charlie\\BS3206-Group-3\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\PuzzleService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\Services\\PuzzleService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\RegisterViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\ViewModel\\RegisterViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\AuthService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\Services\\AuthService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\AccountViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\ViewModel\\AccountViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\View\\RegisterPage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:GroupProject\\View\\RegisterPage.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     }
   ],
   "DocumentGroupContainers": [
@@ -23,27 +31,53 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "PuzzleService.cs",
-              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\PuzzleService.cs",
-              "RelativeDocumentMoniker": "GroupProject\\Services\\PuzzleService.cs",
-              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\PuzzleService.cs",
-              "RelativeToolTip": "GroupProject\\Services\\PuzzleService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Title": "RegisterViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\RegisterViewModel.cs",
+              "RelativeDocumentMoniker": "GroupProject\\ViewModel\\RegisterViewModel.cs",
+              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\RegisterViewModel.cs",
+              "RelativeToolTip": "GroupProject\\ViewModel\\RegisterViewModel.cs",
+              "ViewState": "AgIAALUAAAAAAAAAAAAYwMUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-14T12:27:10.93Z",
+              "WhenOpened": "2025-05-14T22:48:58.265Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "AuthService.cs",
-              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\AuthService.cs",
-              "RelativeDocumentMoniker": "GroupProject\\Services\\AuthService.cs",
-              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\Services\\AuthService.cs",
-              "RelativeToolTip": "GroupProject\\Services\\AuthService.cs",
+              "Title": "AccountViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\AccountViewModel.cs",
+              "RelativeDocumentMoniker": "GroupProject\\ViewModel\\AccountViewModel.cs",
+              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\ViewModel\\AccountViewModel.cs",
+              "RelativeToolTip": "GroupProject\\ViewModel\\AccountViewModel.cs",
+              "ViewState": "AgIAAJ8AAAAAAAAAAAAQwLAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-14T22:48:40.364Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "RegisterPage.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml.cs",
+              "RelativeDocumentMoniker": "GroupProject\\View\\RegisterPage.xaml.cs",
+              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml.cs",
+              "RelativeToolTip": "GroupProject\\View\\RegisterPage.xaml.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-14T12:26:51.109Z",
+              "WhenOpened": "2025-05-14T22:47:18.795Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "RegisterPage.xaml",
+              "DocumentMoniker": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml",
+              "RelativeDocumentMoniker": "GroupProject\\View\\RegisterPage.xaml",
+              "ToolTip": "C:\\Users\\Charlie\\BS3206-Group-3\\GroupProject\\View\\RegisterPage.xaml",
+              "RelativeToolTip": "GroupProject\\View\\RegisterPage.xaml",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAwBkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-05-14T22:47:10.633Z",
               "EditorCaption": ""
             }
           ]
