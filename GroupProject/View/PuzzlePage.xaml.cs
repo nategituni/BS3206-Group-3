@@ -427,6 +427,7 @@ public partial class PuzzlePage : ContentPage
             X1 = _wireStartX, Y1 = _wireStartY,
             X2 = _wireStartX, Y2 = _wireStartY
         };
+        _tempWire.InputTransparent = true;
         Canvas.Children.Add(_tempWire);
 
         // 3) create dot
