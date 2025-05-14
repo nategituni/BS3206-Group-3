@@ -52,10 +52,10 @@ public partial class PuzzlePage : ContentPage
             Sidebar.Children.Add(button);
         }
 
-		loadInitialCanvas();
-
         SizeChanged += (_, __) => UpdateCanvasSize();
         _stateParser = new StateParser();
+
+		loadInitialCanvas();
     }
 
     private async void Save_Clicked(object sender, EventArgs e)
@@ -281,26 +281,37 @@ public partial class PuzzlePage : ContentPage
 
     // ── Card drag ──────────────────────────────────────────────────────
 
-    private void OnCardMoved(object s, PositionChangedEventArgs e)
-    {
-        if (_isDrawingWire) return;
+	private CancellationTokenSource _dragEndCts;
 
-        var cv = (CardView)s;
-        var id = _cardMap.First(kvp => kvp.Value == cv).Key;
+	private void OnCardMoved(object s, PositionChangedEventArgs e)
+	{
+		if (_isDrawingWire) return;
 
-        foreach (var c in _connections.Where(c => c.SourceCardId == id || c.TargetCardId == id))
-            UpdateConnectionLine(c);
+		var cv = (CardView)s;
+		var id = _cardMap.First(kvp => kvp.Value == cv).Key;
+
+		foreach (var c in _connections.Where(c => c.SourceCardId == id || c.TargetCardId == id))
+			UpdateConnectionLine(c);
 
 		var bounds = AbsoluteLayout.GetLayoutBounds(cv);
-		double newX = (double)bounds.X;
-		double newY = (double)bounds.Y;
+		double newX = bounds.X;
+		double newY = bounds.Y;
 
-		var xmlService = new XmlStateService(statePath);
+		// Cancel previous pending updates to avoid unnecessary writes
+		_dragEndCts?.Cancel();
+		_dragEndCts = new CancellationTokenSource();
 
-		xmlService.UpdateCardPosition(id, newX, newY);
+		Task.Delay(500, _dragEndCts.Token).ContinueWith(t =>
+		{
+			if (!t.IsCanceled)
+			{
+				var xmlService = new XmlStateService(statePath);
+				xmlService.UpdateCardPosition(id, newX, newY);
+			}
+		}, TaskScheduler.FromCurrentSynchronizationContext());
 
-        UpdateCanvasSize();
-    }
+		UpdateCanvasSize();
+	}
 
     // ── Start wiring on output tap ──────────────────────────────────────
 
@@ -911,6 +922,15 @@ public partial class PuzzlePage : ContentPage
 
 			vm.X = xPos;
 			vm.Y = yPos;
+
+			var cv = new CardView { BindingContext = vm };
+			cv.DeleteRequested += Card_DeleteRequested;
+			cv.PositionChanged += OnCardMoved;
+			cv.OutputPortTapped += OnOutTapped;
+
+			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+			Canvas.Children.Add(cv);
+			UpdateCanvasSize();
 		}
 
 		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
@@ -948,6 +968,19 @@ public partial class PuzzlePage : ContentPage
 
 			vm.X = xPos;
 			vm.Y = yPos;
+
+			var cv = new CardView { BindingContext = vm };
+
+			cv.DeleteRequested += Card_DeleteRequested;
+			cv.PositionChanged += OnCardMoved;
+			cv.InputPortTapped += OnInTapped;
+			cv.OutputPortTapped += OnOutTapped;
+
+			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+			Canvas.Children.Add(cv);
+
+			_cardMap[cardID] = cv;
+			UpdateCanvasSize();
 		}
 	}
 }
