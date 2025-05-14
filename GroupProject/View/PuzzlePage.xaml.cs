@@ -52,6 +52,8 @@ public partial class PuzzlePage : ContentPage
             Sidebar.Children.Add(button);
         }
 
+		loadInitialCanvas();
+
         SizeChanged += (_, __) => UpdateCanvasSize();
         _stateParser = new StateParser();
     }
@@ -662,7 +664,6 @@ public partial class PuzzlePage : ContentPage
 		}
 	}
 
-
     // ── Redraw permanent wires ─────────────────────────────────────────
 
     private void UpdateConnectionLine(Connection c)
@@ -895,10 +896,58 @@ public partial class PuzzlePage : ContentPage
 
 	private void loadInitialCanvas()
 	{
-		Point spawnStart = new Point(50,50);
+		var xmlService = new XmlStateService(statePath);
 
+		XDocument _doc = xmlService.Document;
 
+		foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+		{
+			int cardID = (int)elem.Attribute("id");
+			string gateType = "Input";
+			double xPos = (double)elem.Attribute("xPos");
+			double yPos = (double)elem.Attribute("yPos");
+
+			var vm = new CardViewModel(cardID, gateType);
+
+			vm.X = xPos;
+			vm.Y = yPos;
+		}
+
+		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+		{
+			int cardID = (int)elem.Attribute("id");
+			string gateType = "Output";
+			double xPos = (double)elem.Attribute("xPos");
+			double yPos = (double)elem.Attribute("yPos");
+
+			var vm = new CardViewModel(cardID, gateType);
+
+			vm.X = xPos;
+			vm.Y = yPos;
+
+			var cv = new CardView { BindingContext = vm };
+			cv.DeleteRequested += Card_DeleteRequested;
+			cv.PositionChanged += OnCardMoved;
+			cv.InputPortTapped += OnInTapped;
+
+			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+			Canvas.Children.Add(cv);
+
+			_cardMap[cardID] = cv;
+			UpdateCanvasSize();
+		}
+
+		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+		{
+			int cardID = (int)elem.Attribute("id");
+			string gateType = (string)elem.Attribute("gateType");
+			double xPos = (double)elem.Attribute("xPos");
+			double yPos = (double)elem.Attribute("yPos");
+
+			var vm = new CardViewModel(cardID, gateType);
+
+			vm.X = xPos;
+			vm.Y = yPos;
+		}
 	}
-
-	
 }
