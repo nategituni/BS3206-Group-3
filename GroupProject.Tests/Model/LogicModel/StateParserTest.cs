@@ -91,5 +91,4 @@ public class StateParserTest
 		Assert.Equal(expectedSum1, outputCards[1].Output);
 		Assert.Equal(expectedSum0, outputCards[2].Output);
 	}
-
 }
