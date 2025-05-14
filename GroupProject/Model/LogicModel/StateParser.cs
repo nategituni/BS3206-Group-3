@@ -92,7 +92,6 @@ public class StateParser
                 {
                     // This sets the Output property from IOCard (via SetValue)
                     outputCard.SetValue(provider.Output);
-                    // Also, update the property that you print.
                     outputCard.Input1 = provider.Output;
                 }
 

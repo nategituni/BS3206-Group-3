@@ -54,7 +54,6 @@
                         VerticalOptions="FillAndExpand"
                         HorizontalOptions="FillAndExpand">
 
-                <!-- Canvas: no pan recognizer here any more -->
                 <AbsoluteLayout
                     x:Name="Canvas"
                     BackgroundColor="#222" />
