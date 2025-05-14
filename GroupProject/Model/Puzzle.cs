@@ -7,7 +7,5 @@ namespace GroupProject.Models
         public string PuzzleName { get; set; }
         public string PuzzleData { get; set; }
         public DateTime CreatedAt { get; set; }
-        public int Views { get; set; } 
-
     }
 }

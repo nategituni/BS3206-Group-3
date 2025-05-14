@@ -14,6 +14,5 @@ namespace GroupProject.Models
         public bool IsMfaVerified { get; set; }
         public string Role { get; set; }
         public string? ProfilePicture { get; set; }
-        public string Bio { get; set; }
     }
 }

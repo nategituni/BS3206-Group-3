@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using GroupProject.Services;
 
-namespace GroupProject.ViewModel
+namespace GroupProject.ViewModels
 {
     public class RegisterViewModel : INotifyPropertyChanged
     {
@@ -77,49 +77,13 @@ namespace GroupProject.ViewModel
             }
         }
 
-        private string _mfaCode;
-        public string MfaCode
-        {
-            get => _mfaCode;
-            set
-            {
-                _mfaCode = value;
-                OnPropertyChanged();
-                ValidateMfaForm();
-            }
-        }
-
-        private bool _isMfaVisible;
-        public bool IsMfaVisible
-        {
-            get => _isMfaVisible;
-            set
-            {
-                _isMfaVisible = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private bool _isVerifyMfaEnabled;
-        public bool IsVerifyMfaEnabled
-        {
-            get => _isVerifyMfaEnabled;
-            set
-            {
-                _isVerifyMfaEnabled = value;
-                OnPropertyChanged();
-            }
-        }
-
         public ICommand RegisterCommand { get; }
-        public ICommand VerifyMfaCommand { get; }
         public ICommand GoToLoginCommand { get; }
 
         public RegisterViewModel()
         {
             RegisterCommand = new Command(async () => await RegisterAsync());
-            VerifyMfaCommand = new Command(async () => await VerifyMfaAsync());
-            GoToLoginCommand = new Command(async () => await Shell.Current.GoToAsync("//LoginPage"));
+            GoToLoginCommand = new Command(async () => await Shell.Current.GoToAsync("//Login"));
         }
 
         private void ValidateForm()
@@ -132,11 +96,6 @@ namespace GroupProject.ViewModel
                 ValidationHelper.IsValidEmail(Email) &&
                 ValidationHelper.IsValidPassword(Password) &&
                 Password == ConfirmPassword;
-        }
-
-        private void ValidateMfaForm()
-        {
-            IsVerifyMfaEnabled = !string.IsNullOrWhiteSpace(MfaCode);
         }
 
         private async Task RegisterAsync()
@@ -158,33 +117,12 @@ namespace GroupProject.ViewModel
 
             if (registered)
             {
-                var sent = await AuthService.SendMfaCodeAsync(Email);
-                if (sent)
-                {
-                    StatusMessage = "A verification code has been sent to your email. Please check your junk/spam folder.";
-                    IsMfaVisible = true;
-                }
-                else
-                {
-                    StatusMessage = "Failed to send verification code.";
-                }
+                Preferences.Set("UserEmail", Email);
+                await Shell.Current.GoToAsync("//Login");
             }
             else
             {
                 StatusMessage = "An error occurred. Try again.";
-            }
-        }
-
-        private async Task VerifyMfaAsync()
-        {
-            if (await AuthService.VerifyMfaCodeAsync(Email, MfaCode))
-            {
-                Preferences.Set("UserEmail", Email);
-                await Shell.Current.GoToAsync("//LoginPage");
-            }
-            else
-            {
-                StatusMessage = "Invalid verification code.";
             }
         }
 

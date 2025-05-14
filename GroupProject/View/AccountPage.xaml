@@ -1,51 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:GroupProject.ViewModels"
              x:Class="GroupProject.View.AccountPage"
+             Title="My Account"
              x:Name="AccountRoot">
 
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="20">
+        <VerticalStackLayout Padding="20" Spacing="15">
+            <Image Source="{Binding ProfileImageSource}" HeightRequest="150" WidthRequest="150" />
+            <Button Text="Upload New Picture" Command="{Binding UpdatePictureCommand}" />
 
-            <!-- Back to Dashboard Button -->
-            <Button Text="⬅ Back to Dashboard"
-                    HorizontalOptions="Start"
-                    Clicked="OnBackToDashboardClicked"
-                    BackgroundColor="LightGray" />
-
-            <!-- Profile Header Layout -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Profile Picture -->
-                <Image Source="{Binding ProfileImageSource}" HeightRequest="80" WidthRequest="80" Aspect="AspectFill"
-                       VerticalOptions="Start">
-                    <Image.Clip>
-                        <EllipseGeometry Center="40,40" RadiusX="40" RadiusY="40" />
-                    </Image.Clip>
-                </Image>
-
-                <!-- Full Name + Bio Stack -->
-                <VerticalStackLayout Grid.Column="1" Padding="10,0" Spacing="5">
-                    <Label Text="{Binding FullName}" FontSize="20" FontAttributes="Bold" />
-                    <Label Text="{Binding Bio}" FontSize="14" LineBreakMode="WordWrap" />
-                </VerticalStackLayout>
-
-                <!-- Edit Profile Button -->
-                <Button Grid.Column="2"
-                        Text="Edit Profile"
-                        Command="{Binding EditProfileCommand}"
-                        VerticalOptions="Start"
-                        HorizontalOptions="End"
-                        Padding="10,5"
-                        FontSize="14" />
-            </Grid>
-
-            <!-- Puzzles Section -->
             <Label Text="My Puzzles" FontAttributes="Bold" FontSize="18" />
 
             <CollectionView ItemsSource="{Binding Puzzles}">
@@ -53,11 +18,6 @@
                     <DataTemplate>
                         <HorizontalStackLayout Spacing="10">
                             <Label Text="{Binding PuzzleName}" VerticalOptions="Center" />
-
-                            <Button Text="Load"
-                                    Command="{Binding BindingContext.LoadPuzzleCommand, Source={x:Reference AccountRoot}}"
-                                    CommandParameter="{Binding .}" />
-
                             <Button Text="Delete"
                                     Command="{Binding BindingContext.DeletePuzzleCommand, Source={x:Reference AccountRoot}}"
                                     CommandParameter="{Binding .}" />
@@ -65,7 +25,6 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

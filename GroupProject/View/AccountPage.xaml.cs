@@ -1,22 +1,12 @@
-using GroupProject.ViewModel;
+using GroupProject.ViewModels;
 
 namespace GroupProject.View;
 
 public partial class AccountPage : ContentPage
 {
-	public AccountPage()
-	{
-		InitializeComponent();
-	}
-
-	protected override void OnAppearing()
-	{
-		base.OnAppearing();
-		BindingContext = new AccountViewModel();
-	}
-
-    private async void OnBackToDashboardClicked(object sender, EventArgs e)
+    public AccountPage()
     {
-        await Shell.Current.GoToAsync("///DashboardPage");
+        InitializeComponent();
+        BindingContext = new AccountViewModel();
     }
 }

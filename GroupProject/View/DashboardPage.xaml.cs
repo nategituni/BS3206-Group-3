@@ -1,4 +1,4 @@
-using GroupProject.ViewModel;
+using GroupProject.ViewModels;
 
 namespace GroupProject.View;
 

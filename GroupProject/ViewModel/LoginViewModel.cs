@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using GroupProject.Services;
 
-namespace GroupProject.ViewModel
+namespace GroupProject.ViewModels
 {
     public class LoginViewModel : INotifyPropertyChanged
     {
@@ -51,19 +51,12 @@ namespace GroupProject.ViewModel
 
         private async Task LoginAsync()
         {
-
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
-            {
-                StatusMessage = "Please enter both email and password.";
-                return;
-            }
-
             bool success = await AuthService.ValidateLoginAsync(Email, Password);
 
             if (success)
             {
                 Preferences.Set("UserEmail", Email);
-                await Shell.Current.GoToAsync("//DashboardPage");
+                await Shell.Current.GoToAsync("//Dashboard");
             }
             else
             {
@@ -73,7 +66,7 @@ namespace GroupProject.ViewModel
 
         private async Task GoToRegisterAsync()
         {
-            await Shell.Current.GoToAsync("//RegisterPage");
+            await Shell.Current.GoToAsync("//Register");
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -2,81 +2,19 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GroupProject.View.RegisterPage"
-             NavigationPage.HasNavigationBar="False">
+             Title="Register">
 
-    <Grid>
-        <!-- Background Image -->
-        <Image Source="background.png"
-               Aspect="AspectFill" />
+    <VerticalStackLayout Padding="20" Spacing="15">
+        <Entry Placeholder="Full Name" Text="{Binding FullName}" />
+        <Entry Placeholder="Email" Text="{Binding Email}" />
+        <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+        <Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
 
-        <!-- Light Grey Register Card -->
-        <Frame VerticalOptions="Center"
-               HorizontalOptions="Center"
-               BackgroundColor="#F5F5F5"
-               CornerRadius="20"
-               Padding="30"
-               WidthRequest="350"
-               HasShadow="True">
-            <VerticalStackLayout Spacing="20">
-                <Label Text="Register"
-                       FontSize="28"
-                       FontAttributes="Bold"
-                       TextColor="Black"
-                       HorizontalOptions="Center" />
+        <Label Text="{Binding StatusMessage}" TextColor="Red" />
 
-                <Entry Placeholder="Full Name"
-                       Text="{Binding FullName}" />
+        <Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
+        <Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
+    </VerticalStackLayout>
 
-                <Entry Placeholder="Email"
-                       Text="{Binding Email}" />
-
-                <Entry Placeholder="Password"
-                       Text="{Binding Password}"
-                       IsPassword="True" />
-
-                <Entry Placeholder="Confirm Password"
-                       Text="{Binding ConfirmPassword}"
-                       IsPassword="True" />
-
-                <!-- Password Requirements -->
-                <Label Text="Password must be at least 7 characters and include:
-- Uppercase letter
-- Lowercase letter
-- Number
-- Symbol (!?@#)"
-                       FontSize="12"
-                       TextColor="Gray" />
-
-                <Label Text="{Binding StatusMessage}"
-                       TextColor="Red"
-                       HorizontalOptions="Center" />
-
-                <Button Text="Register"
-                        Command="{Binding RegisterCommand}"
-                        IsEnabled="{Binding IsRegisterEnabled}"
-                        BackgroundColor="#4F46E5"
-                        TextColor="White"
-                        CornerRadius="8" />
-
-                <!-- MFA Code Entry -->
-                <Entry Placeholder="Enter MFA Code"
-                       Text="{Binding MfaCode}"
-                       IsVisible="{Binding IsMfaVisible}" />
-
-                <Button Text="Verify Code"
-                        Command="{Binding VerifyMfaCommand}"
-                        IsEnabled="{Binding IsVerifyMfaEnabled}"
-                        IsVisible="{Binding IsMfaVisible}"
-                        BackgroundColor="#4F46E5"
-                        TextColor="White"
-                        CornerRadius="8"/>
-
-                <Button Text="Back to Login"
-                        Command="{Binding GoToLoginCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="Black" />
-
-            </VerticalStackLayout>
-        </Frame>
-    </Grid>
 </ContentPage>
+
