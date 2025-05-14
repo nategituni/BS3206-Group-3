@@ -853,478 +853,464 @@ public partial class PuzzlePage : ContentPage
     private double Distance(double x1, double y1, double x2, double y2)
     {
         return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-	}
-
-	// Helper class to store card info for topological sorting.
-	class CardInfo
-	{
-		public int OldId { get; set; }
-		public int NewId { get; set; } = 0;
-		public string Type { get; set; } // "Input", "LogicGate", "Output"
-		public List<int> Dependencies { get; set; } = new List<int>(); // older IDs of cards this one depends on.
-	}
-
-	public void ReshuffleIds()
-	{
-		// 1. Gather all card info from the XML.
-		List<CardInfo> cards = new List<CardInfo>();
-
-		var xmlService = new XmlStateService(statePath);
-
-		XDocument _doc = xmlService.Document;
-
-		// Assume _doc is your XML document that holds the state.
-		// Input cards (have no dependency)
-		foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			cards.Add(new CardInfo { OldId = oldId, Type = "Input" });
-		}
-
-		// Logic gate cards (depend on two inputs possibly).
-		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			var info = new CardInfo { OldId = oldId, Type = "LogicGate" };
-
-			// For each input attribute, add dependency if value is nonzero.
-			int input1 = (int)elem.Attribute("input1");
-			int input2 = (int)elem.Attribute("input2");
-			if (input1 != 0)
-				info.Dependencies.Add(input1);
-			if (input2 != 0)
-				info.Dependencies.Add(input2);
-
-			cards.Add(info);
-		}
-
-		// Output cards (depend on one input).
-		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			var info = new CardInfo { OldId = oldId, Type = "Output" };
-			int input1 = (int)elem.Attribute("input1");
-			if (input1 != 0)
-				info.Dependencies.Add(input1);
-			cards.Add(info);
-		}
-
-		// 2. Build a dependency graph and perform a topological sort.
-		// Create a lookup dictionary keyed on old ID.
-		Dictionary<int, CardInfo> lookup = cards.ToDictionary(c => c.OldId);
-
-		// Compute in-degrees for each card.
-		Dictionary<int, int> inDegree = new Dictionary<int, int>();
-		foreach (var card in cards)
-		{
-			inDegree[card.OldId] = 0;
-		}
-		foreach (var card in cards)
-		{
-			foreach (var dep in card.Dependencies)
-			{
-				// Increase in-degree for the card that depends on something.
-				// (Here, each card's dependency is not about being depended upon; rather, the card
-				// itself should have an in-degree corresponding to its number of dependencies.)
-				inDegree[card.OldId]++;
-			}
-		}
-
-		// Start with cards that have zero in-degree.
-		Queue<CardInfo> ready = new Queue<CardInfo>(cards.Where(c => inDegree[c.OldId] == 0));
-		List<CardInfo> sorted = new List<CardInfo>();
-
-		while (ready.Count > 0)
-		{
-			var card = ready.Dequeue();
-			sorted.Add(card);
-
-			// For every card in the overall list that depends on this card,
-			// decrement its in-degree.
-			foreach (var dependent in cards.Where(c => c.Dependencies.Contains(card.OldId)))
-			{
-				inDegree[dependent.OldId]--;
-				if (inDegree[dependent.OldId] == 0)
-					ready.Enqueue(dependent);
-			}
-		}
-
-		// If there is a cycle, sorted.Count will not equal cards.Count
-		if (sorted.Count != cards.Count)
-		{
-			throw new Exception("A dependency cycle was detected among the cards. Reshuffling is not possible.");
-		}
-
-		// 3. Assign new IDs in the sorted order.
-		int newId = 1;
-		Dictionary<int, int> idMapping = new Dictionary<int, int>(); // mapping old -> new
-		foreach (var card in sorted)
-		{
-			card.NewId = newId;
-			idMapping[card.OldId] = newId;
-			newId++;
-		}
-
-		// 4. Update the XML: 
-		// Update input cards
-		foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			if (idMapping.ContainsKey(oldId))
-			{
-				elem.SetAttributeValue("id", idMapping[oldId]);
-			}
-		}
-		// Update logic gate cards (update id, input1, input2)
-		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			if (idMapping.ContainsKey(oldId))
-			{
-				elem.SetAttributeValue("id", idMapping[oldId]);
-
-				int input1 = (int)elem.Attribute("input1");
-				int input2 = (int)elem.Attribute("input2");
-				if (input1 != 0 && idMapping.ContainsKey(input1))
-					elem.SetAttributeValue("input1", idMapping[input1]);
-				if (input2 != 0 && idMapping.ContainsKey(input2))
-					elem.SetAttributeValue("input2", idMapping[input2]);
-			}
-		}
-		// Update output cards (update id and input1)
-		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
-		{
-			int oldId = (int)elem.Attribute("id");
-			if (idMapping.ContainsKey(oldId))
-			{
-				elem.SetAttributeValue("id", idMapping[oldId]);
-				int input1 = (int)elem.Attribute("input1");
-				if (input1 != 0 && idMapping.ContainsKey(input1))
-					elem.SetAttributeValue("input1", idMapping[input1]);
-			}
-		}
-		// Save the updated XML
-		xmlService.Save();
-
-		// 5. Update the in‑memory CardView objects on your canvas.
-		// Here we update each CardView's BindingContext (a CardViewModel).
-		foreach (var cardView in _cardMap.Values)
-		{
-			if (cardView.BindingContext is CardViewModel vm)
-			{
-				if (idMapping.ContainsKey(vm.Id))
-				{
-					vm.Id = idMapping[vm.Id];
-				}
-			}
-		}
-
-
-		var newCardMap = new Dictionary<int, CardView>();
-		foreach (var card in _cardMap.Values)
-		{
-			if (card.BindingContext is CardViewModel vm)
-			{
-				newCardMap[vm.Id] = card;
-			}
-		}
-		_cardMap = newCardMap;
-
-		foreach (var connection in _connections)
-		{
-			if (idMapping.ContainsKey(connection.SourceCardId))
-				connection.SourceCardId = idMapping[connection.SourceCardId];
-			if (idMapping.ContainsKey(connection.TargetCardId))
-				connection.TargetCardId = idMapping[connection.TargetCardId];
-		}
-
-		xmlService.PrintStateFile();
-	}
-
-
-	private void loadInitialCanvas()
-	{
-		var xmlService = new XmlStateService(statePath);
-
-		XDocument _doc = xmlService.Document;
-
-		foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
-		{
-			int cardID = (int)elem.Attribute("id");
-			string gateType = "Input";
-			double xPos = (double)elem.Attribute("xPos");
-			double yPos = (double)elem.Attribute("yPos");
-
-			var vm = new CardViewModel(cardID, gateType);
-
-			vm.X = xPos;
-			vm.Y = yPos;
-
-			var cv = new CardView { BindingContext = vm };
-			cv.DeleteRequested += Card_DeleteRequested;
-			cv.PositionChanged += OnCardMoved;
-			cv.OutputPortTapped += OnOutTapped;
-
-			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-			Canvas.Children.Add(cv);
-
-			_cardMap[cardID] = cv;
-			UpdateCanvasSize();
-		}
-
-		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
-		{
-			int cardID = (int)elem.Attribute("id");
-			string gateType = "Output";
-			double xPos = (double)elem.Attribute("xPos");
-			double yPos = (double)elem.Attribute("yPos");
-			int input1Id = (int)elem.Attribute("input1");
-
-			var vm = new CardViewModel(cardID, gateType);
-
-			vm.X = xPos;
-			vm.Y = yPos;
-
-			var cv = new CardView { BindingContext = vm };
-			cv.DeleteRequested += Card_DeleteRequested;
-			cv.PositionChanged += OnCardMoved;
-			cv.InputPortTapped += OnInTapped;
-
-			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-			Canvas.Children.Add(cv);
-
-			_cardMap[cardID] = cv;
-			UpdateCanvasSize();
-		}
-
-		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
-		{
-			int cardID = (int)elem.Attribute("id");
-			string gateType = (string)elem.Attribute("gateType");
-			double xPos = (double)elem.Attribute("xPos");
-			double yPos = (double)elem.Attribute("yPos");
-			int input1Id = (int)elem.Attribute("input1");
-			int input2Id = (int)elem.Attribute("input2");
-
-			var vm = new CardViewModel(cardID, gateType);
-
-			vm.X = xPos;
-			vm.Y = yPos;
-
-			var cv = new CardView { BindingContext = vm };
-
-			cv.DeleteRequested += Card_DeleteRequested;
-			cv.PositionChanged += OnCardMoved;
-			cv.InputPortTapped += OnInTapped;
-			cv.OutputPortTapped += OnOutTapped;
-
-			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-			Canvas.Children.Add(cv);
-
-			_cardMap[cardID] = cv;
-			UpdateCanvasSize();
-		}
-
-		// Rebuild connections
-		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
-		{
-			int cardId = (int)elem.Attribute("id");
-			int sourceId = (int)elem.Attribute("input1"); // For outputs, input1 is the connected source
-
-			// get the cardviews
-
-			var targetCv = _cardMap[cardId];
-			var sourceCv = _cardMap[sourceId];
-
-			var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
-			var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-			var wireStartX = sourceBounds.X + sourceBounds.Width;
-			var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-			var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
-
-			var connectionWire = new Line
-			{
-				Stroke = new SolidColorBrush(Colors.White),
-				StrokeThickness = 2,
-				X1 = wireStartX, Y1 = wireStartY,
-				X2 = in1Point.X, Y2 = in1Point.Y
-			};
-
-			if (sourceId != 0)
-			{
-				var newConnection = new Connection
-				{
-					SourceCardId = sourceId,
-					TargetCardId = cardId,
-					TargetInputIndex = 1,
-					LineShape = connectionWire
-				};
-
-				var hitArea = new ContentView
-				{
-					BackgroundColor = Colors.Transparent,
-					InputTransparent = false
-				};
-
-				// Calculate the bounding box for the hit area with extra margin for easier tapping.
-				double margin = 10;
-				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-				// Attach a tap gesture recognizer for bringing up the delete button.
-				var tapRecognizer = new TapGestureRecognizer();
-				tapRecognizer.Tapped += (s, e) =>
-				{
-					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
-					OnConnectionTapped(newConnection);
-				};
-				hitArea.GestureRecognizers.Add(tapRecognizer);
-
-				Canvas.Children.Add(connectionWire);
-
-				Canvas.Children.Add(hitArea);
-
-				newConnection.HitArea = hitArea;
-				_connections.Add(newConnection);
-			}
-		}
-
-		// Rebuild connections for LogicGateCards (can have input1 and/or input2)
-		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
-		{
-			int cardId = (int)elem.Attribute("id");
-			int input1SourceId = (int)elem.Attribute("input1");
-			int input2SourceId = (int)elem.Attribute("input2");
-
-			// Get the target card view from the map.
-			var targetCv = _cardMap[cardId];
-			var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
-
-			// Process connection for input1, if connected.
-			if (input1SourceId != 0)
-			{
-				// Get source card view from the map.
-				var sourceCv = _cardMap[input1SourceId];
-				var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-				// Setup the starting point at the right side of the source card.
-				double wireStartX = sourceBounds.X + sourceBounds.Width;
-				double wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-				// For input1, assume the target connection point is at 25% down from the top.
-				var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
-
-				// Create the connection line.
-				var connectionWire = new Line
-				{
-					Stroke = new SolidColorBrush(Colors.White),
-					StrokeThickness = 2,
-					X1 = wireStartX, Y1 = wireStartY,
-					X2 = in1Point.X, Y2 = in1Point.Y
-				};
-
-				// Create the connection object.
-				var newConnection = new Connection
-				{
-					SourceCardId = input1SourceId,
-					TargetCardId = cardId,
-					TargetInputIndex = 1,
-					LineShape = connectionWire
-				};
-
-				// Build a transparent hit area around the connection line.
-				var hitArea = new ContentView
-				{
-					BackgroundColor = Colors.Transparent,
-					InputTransparent = false
-				};
-
-				double margin = 10;
-				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-				// Add a tap recognizer to let the user delete the connection.
-				var tapRecognizer = new TapGestureRecognizer();
-				tapRecognizer.Tapped += (s, e) =>
-				{
-					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
-					OnConnectionTapped(newConnection);
-				};
-				hitArea.GestureRecognizers.Add(tapRecognizer);
-
-				// Add the visuals to the canvas.
-				Canvas.Children.Add(connectionWire);
-				Canvas.Children.Add(hitArea);
-
-				// Save hit area reference and track the connection.
-				newConnection.HitArea = hitArea;
-				_connections.Add(newConnection);
-			}
-
-			// Process connection for input2, if connected.
-			if (input2SourceId != 0)
-			{
-				// Get the source card view.
-				var sourceCv = _cardMap[input2SourceId];
-				var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-				double wireStartX = sourceBounds.X + sourceBounds.Width;
-				double wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-				// For input2, assume the target connection point is at 75% down from the top.
-				var in2Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.75);
-
-				var connectionWire = new Line
-				{
-					Stroke = new SolidColorBrush(Colors.White),
-					StrokeThickness = 2,
-					X1 = wireStartX, Y1 = wireStartY,
-					X2 = in2Point.X, Y2 = in2Point.Y
-				};
-
-				var newConnection = new Connection
-				{
-					SourceCardId = input2SourceId,
-					TargetCardId = cardId,
-					TargetInputIndex = 2,
-					LineShape = connectionWire
-				};
-
-				var hitArea = new ContentView
-				{
-					BackgroundColor = Colors.Transparent,
-					InputTransparent = false
-				};
-
-				double margin = 10;
-				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-				var tapRecognizer = new TapGestureRecognizer();
-				tapRecognizer.Tapped += (s, e) =>
-				{
-					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
-					OnConnectionTapped(newConnection);
-				};
-				hitArea.GestureRecognizers.Add(tapRecognizer);
-
-				Canvas.Children.Add(connectionWire);
-				Canvas.Children.Add(hitArea);
-
-				newConnection.HitArea = hitArea;
-				_connections.Add(newConnection);
-			}
-		}
-	}
+    }
+
+    public void ReshuffleIds()
+    {
+        // 1. Gather all card info from the XML.
+        var cards = new List<CardInfo>();
+
+        var xmlService = new XmlStateService(statePath);
+
+        var _doc = xmlService.Document;
+
+        // Assume _doc is your XML document that holds the state.
+        // Input cards (have no dependency)
+        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            cards.Add(new CardInfo { OldId = oldId, Type = "Input" });
+        }
+
+        // Logic gate cards (depend on two inputs possibly).
+        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            var info = new CardInfo { OldId = oldId, Type = "LogicGate" };
+
+            // For each input attribute, add dependency if value is nonzero.
+            var input1 = (int)elem.Attribute("input1");
+            var input2 = (int)elem.Attribute("input2");
+            if (input1 != 0)
+                info.Dependencies.Add(input1);
+            if (input2 != 0)
+                info.Dependencies.Add(input2);
+
+            cards.Add(info);
+        }
+
+        // Output cards (depend on one input).
+        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            var info = new CardInfo { OldId = oldId, Type = "Output" };
+            var input1 = (int)elem.Attribute("input1");
+            if (input1 != 0)
+                info.Dependencies.Add(input1);
+            cards.Add(info);
+        }
+
+        // 2. Build a dependency graph and perform a topological sort.
+        // Create a lookup dictionary keyed on old ID.
+        var lookup = cards.ToDictionary(c => c.OldId);
+
+        // Compute in-degrees for each card.
+        var inDegree = new Dictionary<int, int>();
+        foreach (var card in cards) inDegree[card.OldId] = 0;
+        foreach (var card in cards)
+        foreach (var dep in card.Dependencies)
+            // Increase in-degree for the card that depends on something.
+            // (Here, each card's dependency is not about being depended upon; rather, the card
+            // itself should have an in-degree corresponding to its number of dependencies.)
+            inDegree[card.OldId]++;
+
+        // Start with cards that have zero in-degree.
+        var ready = new Queue<CardInfo>(cards.Where(c => inDegree[c.OldId] == 0));
+        var sorted = new List<CardInfo>();
+
+        while (ready.Count > 0)
+        {
+            var card = ready.Dequeue();
+            sorted.Add(card);
+
+            // For every card in the overall list that depends on this card,
+            // decrement its in-degree.
+            foreach (var dependent in cards.Where(c => c.Dependencies.Contains(card.OldId)))
+            {
+                inDegree[dependent.OldId]--;
+                if (inDegree[dependent.OldId] == 0)
+                    ready.Enqueue(dependent);
+            }
+        }
+
+        // If there is a cycle, sorted.Count will not equal cards.Count
+        if (sorted.Count != cards.Count)
+            throw new Exception("A dependency cycle was detected among the cards. Reshuffling is not possible.");
+
+        // 3. Assign new IDs in the sorted order.
+        var newId = 1;
+        var idMapping = new Dictionary<int, int>(); // mapping old -> new
+        foreach (var card in sorted)
+        {
+            card.NewId = newId;
+            idMapping[card.OldId] = newId;
+            newId++;
+        }
+
+        // 4. Update the XML: 
+        // Update input cards
+        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            if (idMapping.ContainsKey(oldId)) elem.SetAttributeValue("id", idMapping[oldId]);
+        }
+
+        // Update logic gate cards (update id, input1, input2)
+        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            if (idMapping.ContainsKey(oldId))
+            {
+                elem.SetAttributeValue("id", idMapping[oldId]);
+
+                var input1 = (int)elem.Attribute("input1");
+                var input2 = (int)elem.Attribute("input2");
+                if (input1 != 0 && idMapping.ContainsKey(input1))
+                    elem.SetAttributeValue("input1", idMapping[input1]);
+                if (input2 != 0 && idMapping.ContainsKey(input2))
+                    elem.SetAttributeValue("input2", idMapping[input2]);
+            }
+        }
+
+        // Update output cards (update id and input1)
+        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        {
+            var oldId = (int)elem.Attribute("id");
+            if (idMapping.ContainsKey(oldId))
+            {
+                elem.SetAttributeValue("id", idMapping[oldId]);
+                var input1 = (int)elem.Attribute("input1");
+                if (input1 != 0 && idMapping.ContainsKey(input1))
+                    elem.SetAttributeValue("input1", idMapping[input1]);
+            }
+        }
+
+        // Save the updated XML
+        xmlService.Save();
+
+        // 5. Update the in‑memory CardView objects on your canvas.
+        // Here we update each CardView's BindingContext (a CardViewModel).
+        foreach (var cardView in _cardMap.Values)
+            if (cardView.BindingContext is CardViewModel vm)
+                if (idMapping.ContainsKey(vm.Id))
+                    vm.Id = idMapping[vm.Id];
+
+
+        var newCardMap = new Dictionary<int, CardView>();
+        foreach (var card in _cardMap.Values)
+            if (card.BindingContext is CardViewModel vm)
+                newCardMap[vm.Id] = card;
+
+        _cardMap = newCardMap;
+        
+        foreach (var connection in _connections)
+        {
+            if (idMapping.ContainsKey(connection.SourceCardId))
+                connection.SourceCardId = idMapping[connection.SourceCardId];
+            
+            if (idMapping.ContainsKey(connection.TargetCardId))
+                connection.TargetCardId = idMapping[connection.TargetCardId];
+        }
+
+        xmlService.PrintStateFile();
+    }
+
+
+    private void loadInitialCanvas()
+    {
+        var xmlService = new XmlStateService(statePath);
+
+        var _doc = xmlService.Document;
+
+        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        {
+            var cardID = (int)elem.Attribute("id");
+            var gateType = "Input";
+            var xPos = (double)elem.Attribute("xPos");
+            var yPos = (double)elem.Attribute("yPos");
+
+            var vm = new CardViewModel(cardID, gateType);
+
+            vm.X = xPos;
+            vm.Y = yPos;
+
+            var cv = new CardView { BindingContext = vm };
+            cv.DeleteRequested += Card_DeleteRequested;
+            cv.PositionChanged += OnCardMoved;
+            cv.OutputPortTapped += OnOutTapped;
+
+            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+            Canvas.Children.Add(cv);
+
+            _cardMap[cardID] = cv;
+            UpdateCanvasSize();
+        }
+
+        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        {
+            var cardID = (int)elem.Attribute("id");
+            var gateType = "Output";
+            var xPos = (double)elem.Attribute("xPos");
+            var yPos = (double)elem.Attribute("yPos");
+            var input1Id = (int)elem.Attribute("input1");
+
+            var vm = new CardViewModel(cardID, gateType);
+
+            vm.X = xPos;
+            vm.Y = yPos;
+
+            var cv = new CardView { BindingContext = vm };
+            cv.DeleteRequested += Card_DeleteRequested;
+            cv.PositionChanged += OnCardMoved;
+            cv.InputPortTapped += OnInTapped;
+
+            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+            Canvas.Children.Add(cv);
+
+            _cardMap[cardID] = cv;
+            UpdateCanvasSize();
+        }
+
+        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        {
+            var cardID = (int)elem.Attribute("id");
+            var gateType = (string)elem.Attribute("gateType");
+            var xPos = (double)elem.Attribute("xPos");
+            var yPos = (double)elem.Attribute("yPos");
+            var input1Id = (int)elem.Attribute("input1");
+            var input2Id = (int)elem.Attribute("input2");
+
+            var vm = new CardViewModel(cardID, gateType);
+
+            vm.X = xPos;
+            vm.Y = yPos;
+
+            var cv = new CardView { BindingContext = vm };
+
+            cv.DeleteRequested += Card_DeleteRequested;
+            cv.PositionChanged += OnCardMoved;
+            cv.InputPortTapped += OnInTapped;
+            cv.OutputPortTapped += OnOutTapped;
+
+            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+            Canvas.Children.Add(cv);
+
+            _cardMap[cardID] = cv;
+            UpdateCanvasSize();
+        }
+
+        // Rebuild connections
+        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        {
+            var cardId = (int)elem.Attribute("id");
+            var sourceId = (int)elem.Attribute("input1"); // For outputs, input1 is the connected source
+
+            // get the cardviews
+
+            var targetCv = _cardMap[cardId];
+            var sourceCv = _cardMap[sourceId];
+
+            var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
+            var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+            var wireStartX = sourceBounds.X + sourceBounds.Width;
+            var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+            var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
+
+            var connectionWire = new Line
+            {
+                Stroke = new SolidColorBrush(Colors.White),
+                StrokeThickness = 2,
+                X1 = wireStartX, Y1 = wireStartY,
+                X2 = in1Point.X, Y2 = in1Point.Y
+            };
+
+            if (sourceId != 0)
+            {
+                var newConnection = new Connection
+                {
+                    SourceCardId = sourceId,
+                    TargetCardId = cardId,
+                    TargetInputIndex = 1,
+                    LineShape = connectionWire
+                };
+
+                var hitArea = new ContentView
+                {
+                    BackgroundColor = Colors.Transparent,
+                    InputTransparent = false
+                };
+
+                // Calculate the bounding box for the hit area with extra margin for easier tapping.
+                double margin = 10;
+                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+                // Attach a tap gesture recognizer for bringing up the delete button.
+                var tapRecognizer = new TapGestureRecognizer();
+                tapRecognizer.Tapped += (s, e) =>
+                {
+                    Debug.WriteLine("Connection hit area tapped!");
+                    OnConnectionTapped(newConnection);
+                };
+                hitArea.GestureRecognizers.Add(tapRecognizer);
+
+                connectionWire.InputTransparent = true; 
+                Canvas.Children.Add(connectionWire);
+
+                Canvas.Children.Add(hitArea);
+
+                newConnection.HitArea = hitArea;
+                _connections.Add(newConnection);
+            }
+        }
+
+        // Rebuild connections for LogicGateCards (can have input1 and/or input2)
+        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        {
+            var cardId = (int)elem.Attribute("id");
+            var input1SourceId = (int)elem.Attribute("input1");
+            var input2SourceId = (int)elem.Attribute("input2");
+
+            // Get the target card view from the map.
+            var targetCv = _cardMap[cardId];
+            var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
+
+            // Process connection for input1, if connected.
+            if (input1SourceId != 0)
+            {
+                // Get source card view from the map.
+                var sourceCv = _cardMap[input1SourceId];
+                var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+                // Setup the starting point at the right side of the source card.
+                var wireStartX = sourceBounds.X + sourceBounds.Width;
+                var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+                // For input1, assume the target connection point is at 25% down from the top.
+                var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
+
+                // Create the connection line.
+                var connectionWire = new Line
+                {
+                    Stroke = new SolidColorBrush(Colors.White),
+                    StrokeThickness = 2,
+                    X1 = wireStartX, Y1 = wireStartY,
+                    X2 = in1Point.X, Y2 = in1Point.Y
+                };
+
+                // Create the connection object.
+                var newConnection = new Connection
+                {
+                    SourceCardId = input1SourceId,
+                    TargetCardId = cardId,
+                    TargetInputIndex = 1,
+                    LineShape = connectionWire
+                };
+
+                // Build a transparent hit area around the connection line.
+                var hitArea = new ContentView
+                {
+                    BackgroundColor = Colors.Transparent,
+                    InputTransparent = false
+                };
+
+                double margin = 10;
+                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+                // Add a tap recognizer to let the user delete the connection.
+                var tapRecognizer = new TapGestureRecognizer();
+                tapRecognizer.Tapped += (s, e) =>
+                {
+                    Debug.WriteLine("Connection hit area tapped!");
+                    OnConnectionTapped(newConnection);
+                };
+                hitArea.GestureRecognizers.Add(tapRecognizer);
+
+                // Add the visuals to the canvas.
+                connectionWire.InputTransparent = true; 
+                Canvas.Children.Add(connectionWire);
+                Canvas.Children.Add(hitArea);
+
+                // Save hit area reference and track the connection.
+                newConnection.HitArea = hitArea;
+                _connections.Add(newConnection);
+            }
+
+            // Process connection for input2, if connected.
+            if (input2SourceId != 0)
+            {
+                // Get the source card view.
+                var sourceCv = _cardMap[input2SourceId];
+                var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+                var wireStartX = sourceBounds.X + sourceBounds.Width;
+                var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+                // For input2, assume the target connection point is at 75% down from the top.
+                var in2Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.75);
+
+                var connectionWire = new Line
+                {
+                    Stroke = new SolidColorBrush(Colors.White),
+                    StrokeThickness = 2,
+                    X1 = wireStartX, Y1 = wireStartY,
+                    X2 = in2Point.X, Y2 = in2Point.Y
+                };
+
+                var newConnection = new Connection
+                {
+                    SourceCardId = input2SourceId,
+                    TargetCardId = cardId,
+                    TargetInputIndex = 2,
+                    LineShape = connectionWire
+                };
+
+                var hitArea = new ContentView
+                {
+                    BackgroundColor = Colors.Transparent,
+                    InputTransparent = false
+                };
+
+                double margin = 10;
+                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+                var tapRecognizer = new TapGestureRecognizer();
+                tapRecognizer.Tapped += (s, e) =>
+                {
+                    Debug.WriteLine("Connection hit area tapped!");
+                    OnConnectionTapped(newConnection);
+                };
+                hitArea.GestureRecognizers.Add(tapRecognizer);
+
+                connectionWire.InputTransparent = true;
+                Canvas.Children.Add(connectionWire);
+                Canvas.Children.Add(hitArea);
+
+                newConnection.HitArea = hitArea;
+                _connections.Add(newConnection);
+            }
+        }
+    }
+
+    // Helper class to store card info for topological sorting.
+    private class CardInfo
+    {
+        public int OldId { get; set; }
+        public int NewId { get; set; }
+        public string Type { get; set; } // "Input", "LogicGate", "Output"
+        public List<int> Dependencies { get; } = new(); // older IDs of cards this one depends on.
+    }
 }
