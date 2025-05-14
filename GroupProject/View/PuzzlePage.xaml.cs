@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using System.Runtime.InteropServices.Marshalling;
+using System.Xml.Linq;
 using GroupProject.Model.LogicModel;
 using GroupProject.Services;
 using GroupProject.ViewModel;
@@ -944,6 +945,8 @@ public partial class PuzzlePage : ContentPage
 
 			AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
 			Canvas.Children.Add(cv);
+
+			_cardMap[cardID] = cv;
 			UpdateCanvasSize();
 		}
 
@@ -953,6 +956,7 @@ public partial class PuzzlePage : ContentPage
 			string gateType = "Output";
 			double xPos = (double)elem.Attribute("xPos");
 			double yPos = (double)elem.Attribute("yPos");
+			int input1Id = (int)elem.Attribute("input1");
 
 			var vm = new CardViewModel(cardID, gateType);
 
@@ -977,6 +981,8 @@ public partial class PuzzlePage : ContentPage
 			string gateType = (string)elem.Attribute("gateType");
 			double xPos = (double)elem.Attribute("xPos");
 			double yPos = (double)elem.Attribute("yPos");
+			int input1Id = (int)elem.Attribute("input1");
+			int input2Id = (int)elem.Attribute("input2");
 
 			var vm = new CardViewModel(cardID, gateType);
 
@@ -995,6 +1001,208 @@ public partial class PuzzlePage : ContentPage
 
 			_cardMap[cardID] = cv;
 			UpdateCanvasSize();
+		}
+
+		// Rebuild connections
+		foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+		{
+			int cardId = (int)elem.Attribute("id");
+			int sourceId = (int)elem.Attribute("input1"); // For outputs, input1 is the connected source
+
+			// get the cardviews
+
+			var targetCv = _cardMap[cardId];
+			var sourceCv = _cardMap[sourceId];
+
+			var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
+			var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+			var wireStartX = sourceBounds.X + sourceBounds.Width;
+			var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+			var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
+
+			var connectionWire = new Line
+			{
+				Stroke = new SolidColorBrush(Colors.White),
+				StrokeThickness = 2,
+				X1 = wireStartX, Y1 = wireStartY,
+				X2 = in1Point.X, Y2 = in1Point.Y
+			};
+
+			if (sourceId != 0)
+			{
+				var newConnection = new Connection
+				{
+					SourceCardId = sourceId,
+					TargetCardId = cardId,
+					TargetInputIndex = 1,
+					LineShape = connectionWire
+				};
+
+				var hitArea = new ContentView
+				{
+					BackgroundColor = Colors.Transparent,
+					InputTransparent = false
+				};
+
+				// Calculate the bounding box for the hit area with extra margin for easier tapping.
+				double margin = 10;
+				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+				// Attach a tap gesture recognizer for bringing up the delete button.
+				var tapRecognizer = new TapGestureRecognizer();
+				tapRecognizer.Tapped += (s, e) =>
+				{
+					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
+					OnConnectionTapped(newConnection);
+				};
+				hitArea.GestureRecognizers.Add(tapRecognizer);
+
+				Canvas.Children.Add(connectionWire);
+
+				Canvas.Children.Add(hitArea);
+
+				newConnection.HitArea = hitArea;
+				_connections.Add(newConnection);
+			}
+		}
+
+		// Rebuild connections for LogicGateCards (can have input1 and/or input2)
+		foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+		{
+			int cardId = (int)elem.Attribute("id");
+			int input1SourceId = (int)elem.Attribute("input1");
+			int input2SourceId = (int)elem.Attribute("input2");
+
+			// Get the target card view from the map.
+			var targetCv = _cardMap[cardId];
+			var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
+
+			// Process connection for input1, if connected.
+			if (input1SourceId != 0)
+			{
+				// Get source card view from the map.
+				var sourceCv = _cardMap[input1SourceId];
+				var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+				// Setup the starting point at the right side of the source card.
+				double wireStartX = sourceBounds.X + sourceBounds.Width;
+				double wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+				// For input1, assume the target connection point is at 25% down from the top.
+				var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
+
+				// Create the connection line.
+				var connectionWire = new Line
+				{
+					Stroke = new SolidColorBrush(Colors.White),
+					StrokeThickness = 2,
+					X1 = wireStartX, Y1 = wireStartY,
+					X2 = in1Point.X, Y2 = in1Point.Y
+				};
+
+				// Create the connection object.
+				var newConnection = new Connection
+				{
+					SourceCardId = input1SourceId,
+					TargetCardId = cardId,
+					TargetInputIndex = 1,
+					LineShape = connectionWire
+				};
+
+				// Build a transparent hit area around the connection line.
+				var hitArea = new ContentView
+				{
+					BackgroundColor = Colors.Transparent,
+					InputTransparent = false
+				};
+
+				double margin = 10;
+				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+				// Add a tap recognizer to let the user delete the connection.
+				var tapRecognizer = new TapGestureRecognizer();
+				tapRecognizer.Tapped += (s, e) =>
+				{
+					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
+					OnConnectionTapped(newConnection);
+				};
+				hitArea.GestureRecognizers.Add(tapRecognizer);
+
+				// Add the visuals to the canvas.
+				Canvas.Children.Add(connectionWire);
+				Canvas.Children.Add(hitArea);
+
+				// Save hit area reference and track the connection.
+				newConnection.HitArea = hitArea;
+				_connections.Add(newConnection);
+			}
+
+			// Process connection for input2, if connected.
+			if (input2SourceId != 0)
+			{
+				// Get the source card view.
+				var sourceCv = _cardMap[input2SourceId];
+				var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
+
+				double wireStartX = sourceBounds.X + sourceBounds.Width;
+				double wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
+
+				// For input2, assume the target connection point is at 75% down from the top.
+				var in2Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.75);
+
+				var connectionWire = new Line
+				{
+					Stroke = new SolidColorBrush(Colors.White),
+					StrokeThickness = 2,
+					X1 = wireStartX, Y1 = wireStartY,
+					X2 = in2Point.X, Y2 = in2Point.Y
+				};
+
+				var newConnection = new Connection
+				{
+					SourceCardId = input2SourceId,
+					TargetCardId = cardId,
+					TargetInputIndex = 2,
+					LineShape = connectionWire
+				};
+
+				var hitArea = new ContentView
+				{
+					BackgroundColor = Colors.Transparent,
+					InputTransparent = false
+				};
+
+				double margin = 10;
+				double minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
+				double minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
+				double width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
+				double height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
+				AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+				var tapRecognizer = new TapGestureRecognizer();
+				tapRecognizer.Tapped += (s, e) =>
+				{
+					System.Diagnostics.Debug.WriteLine("Connection hit area tapped!");
+					OnConnectionTapped(newConnection);
+				};
+				hitArea.GestureRecognizers.Add(tapRecognizer);
+
+				Canvas.Children.Add(connectionWire);
+				Canvas.Children.Add(hitArea);
+
+				newConnection.HitArea = hitArea;
+				_connections.Add(newConnection);
+			}
 		}
 	}
 }
