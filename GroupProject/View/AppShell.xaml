@@ -9,6 +9,8 @@
 	<ShellContent Route="Register" ContentTemplate="{DataTemplate views:RegisterPage}" />
 	<ShellContent Route="Dashboard" ContentTemplate="{DataTemplate views:DashboardPage}" />
 	<ShellContent Title="Account" Route="AccountPage" ContentTemplate="{DataTemplate views:AccountPage}" />
+       <ShellContent Route="Test" ContentTemplate="{DataTemplate views:MainPage}"/>
+       <ShellContent Route="Challenges" ContentTemplate="{DataTemplate views:ChallengesPage}"/>
 
     <ShellContent
         Title="Register"
