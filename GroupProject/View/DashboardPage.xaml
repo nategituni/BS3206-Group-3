@@ -11,6 +11,13 @@
                FontSize="24" />
 
         <Button Text="My Account" Command="{Binding GoToAccountCommand}" />
+
+		<Button Text="Logout" Command="{Binding GoToLogoutCommand}" />
+
+		<Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" />
+
+		<!-- <Button Text="System Puzzles" Command="{Binding GoToMichaelPageCommand}" /> -->
+		
     </VerticalStackLayout>
 
 </ContentPage>
