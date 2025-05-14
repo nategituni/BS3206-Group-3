@@ -119,7 +119,7 @@ namespace GroupProject.ViewModels
         {
             RegisterCommand = new Command(async () => await RegisterAsync());
             VerifyMfaCommand = new Command(async () => await VerifyMfaAsync());
-            GoToLoginCommand = new Command(async () => await Shell.Current.GoToAsync("//Login"));
+            GoToLoginCommand = new Command(async () => await Shell.Current.GoToAsync("//LoginPage"));
         }
 
         private void ValidateForm()
@@ -180,7 +180,7 @@ namespace GroupProject.ViewModels
             if (await AuthService.VerifyMfaCodeAsync(Email, MfaCode))
             {
                 Preferences.Set("UserEmail", Email);
-                await Shell.Current.GoToAsync("//Login");
+                await Shell.Current.GoToAsync("//LoginPage");
             }
             else
             {
