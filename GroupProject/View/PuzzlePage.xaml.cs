@@ -448,7 +448,6 @@ public partial class PuzzlePage : ContentPage
         _wireOverlay = new BoxView
         {
             BackgroundColor = Colors.Transparent,
-            InputTransparent = true
         };
         AbsoluteLayout.SetLayoutFlags(_wireOverlay, AbsoluteLayoutFlags.All);
         AbsoluteLayout.SetLayoutBounds(_wireOverlay, new Rect(0, 0, 1, 1));
@@ -462,7 +461,6 @@ public partial class PuzzlePage : ContentPage
 
     private void OnWireOverlayPan(object sender, PanUpdatedEventArgs e)
     {
-        DisplayAlert("Wire", "PanUpdated", "OK");
         var xmlService = new XmlStateService(statePath);
 
         if (!_isDrawingWire) return;
