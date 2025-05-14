@@ -37,6 +37,15 @@ public class XmlStateService
         _doc.Save(_filePath);
     }
 
+	// Gets all Id's
+	public List<int> GetAllIds()
+	{
+		return _doc.Descendants()
+			.Where(x => x.Attribute("id") != null)
+			.Select(x => (int)x.Attribute("id"))
+			.ToList();
+	}
+
     // Adds an input card element
     public void AddInputCard(int id, bool value, double xPos, double yPos)
     {

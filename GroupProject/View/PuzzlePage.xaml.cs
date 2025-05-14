@@ -154,25 +154,32 @@ public partial class PuzzlePage : ContentPage
 
     // ── AddGate helper ─────────────────────────────────────────────────
 
-    private void AddGate(string gateType)
-    {
+	private void AddGate(string gateType)
+	{
 		var xmlService = new XmlStateService(statePath);
-        var id = _nextId++;
-        var vm = new CardViewModel(id, gateType);
+		
+		// Fetch all existing IDs
+		var existingIds = xmlService.GetAllIds();
+		
+		// Find the next available ID
+		int id = _nextId;
+		while (existingIds.Contains(id))
+		{
+			id++;
+		}
+		_nextId = id + 1; // Increment for next addition
 
-		Point spawnStart = new Point(50,50);
-
+		var vm = new CardViewModel(id, gateType);
+		Point spawnStart = new Point(50, 50);
 		Point candidate = GetNearestFreeSpot(spawnStart, new Size(120, 80));
+
 		vm.X = candidate.X;
 		vm.Y = candidate.Y;
 
-        var cv = new CardView { BindingContext = vm };
-
+		var cv = new CardView { BindingContext = vm };
 		cv.DeleteRequested += Card_DeleteRequested;
-
-        AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-        Canvas.Children.Add(cv);
-
+		AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
+		Canvas.Children.Add(cv);
 		cv.PositionChanged += OnCardMoved;
 
 		if (gateType == "Input")
@@ -180,13 +187,11 @@ public partial class PuzzlePage : ContentPage
 			cv.OutputPortTapped += OnOutTapped;
 			xmlService.AddInputCard(id, false, vm.X, vm.Y);
 		}
-		
 		else if (gateType == "Output")
 		{
 			cv.InputPortTapped += OnInTapped;
 			xmlService.AddOutputCard(id, 0, vm.X, vm.Y);
 		}
-
 		else
 		{
 			cv.InputPortTapped += OnInTapped;
@@ -194,9 +199,9 @@ public partial class PuzzlePage : ContentPage
 			xmlService.AddLogicGateCard(id, gateType, 0, 0, vm.X, vm.Y);
 		}
 
-        _cardMap[id] = cv;
-        UpdateCanvasSize();
-    }
+		_cardMap[id] = cv;
+		UpdateCanvasSize();
+	}
 
 	private void Card_DeleteRequested(object sender, EventArgs e)
 	{
