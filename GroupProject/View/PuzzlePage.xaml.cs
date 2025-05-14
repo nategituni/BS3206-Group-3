@@ -915,6 +915,13 @@ public partial class PuzzlePage : ContentPage
 		}
 		_cardMap = newCardMap;
 
+		foreach (var connection in _connections)
+		{
+			if (idMapping.ContainsKey(connection.SourceCardId))
+				connection.SourceCardId = idMapping[connection.SourceCardId];
+			if (idMapping.ContainsKey(connection.TargetCardId))
+				connection.TargetCardId = idMapping[connection.TargetCardId];
+		}
 
 		xmlService.PrintStateFile();
 	}
