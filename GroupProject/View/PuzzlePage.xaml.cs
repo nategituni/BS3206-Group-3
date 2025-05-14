@@ -430,9 +430,6 @@ public partial class PuzzlePage : ContentPage
 							LineShape = _tempWire
 						};
 
-						// Add the connection to your collection.
-						_connections.Add(newConnection);
-
 						// Now create and add the invisible hit area.
 						var hitArea = new ContentView
 						{
@@ -459,6 +456,9 @@ public partial class PuzzlePage : ContentPage
 
 						// Add the hit area (and the connection line already exists) to the Canvas.
 						Canvas.Children.Add(hitArea);
+
+						newConnection.HitArea = hitArea;
+						_connections.Add(newConnection);
 
 						connected = true;
 
@@ -488,7 +488,6 @@ public partial class PuzzlePage : ContentPage
 							TargetInputIndex = 2,
 							LineShape = _tempWire
 						};
-						_connections.Add(newConnection);
 
 						var hitArea = new ContentView
 						{
@@ -510,6 +509,9 @@ public partial class PuzzlePage : ContentPage
 						};
 						hitArea.GestureRecognizers.Add(tapRecognizer);
 						Canvas.Children.Add(hitArea);
+
+						newConnection.HitArea = hitArea;
+						_connections.Add(newConnection);
 
 						connected = true;
 
@@ -653,6 +655,9 @@ public partial class PuzzlePage : ContentPage
 			if (Canvas.Children.Contains(connection.LineShape))
 				Canvas.Children.Remove(connection.LineShape);
 
+			if (Canvas.Children.Contains(connection.HitArea))
+				Canvas.Children.Remove(connection.HitArea);
+
 			if (Canvas.Children.Contains(deleteButton))
 				Canvas.Children.Remove(deleteButton);
 
@@ -667,6 +672,10 @@ public partial class PuzzlePage : ContentPage
 		{
 			if (Canvas.Children.Contains(connection.LineShape))
 				Canvas.Children.Remove(connection.LineShape);
+
+			if (Canvas.Children.Contains(connection.HitArea))
+				Canvas.Children.Remove(connection.HitArea);
+
 			if (Canvas.Children.Contains(deleteButton))
 				Canvas.Children.Remove(deleteButton);
 			_connections.Remove(connection);

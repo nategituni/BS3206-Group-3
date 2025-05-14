@@ -46,6 +46,20 @@ public class XmlStateService
 			.ToList();
 	}
 
+	public List<int> GetAllIdsThatAreUsedAsInputs()
+	{
+		return _doc.Descendants()
+			.Where(x => x.Attribute("input1") != null || x.Attribute("input2") != null) // Look for either attribute
+			.SelectMany(x => new List<int> 
+			{ 
+				x.Attribute("input1") != null ? (int)x.Attribute("input1") : default, 
+				x.Attribute("input2") != null ? (int)x.Attribute("input2") : default 
+			})
+			.Where(id => id != default) // Remove any default values
+			.Distinct() // Ensure unique IDs
+			.ToList();
+	}
+
     // Adds an input card element
     public void AddInputCard(int id, bool value, double xPos, double yPos)
     {
