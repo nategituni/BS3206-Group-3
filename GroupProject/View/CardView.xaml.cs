@@ -79,7 +79,7 @@ public partial class CardView : ContentView
                 AbsoluteLayout.SetLayoutBounds(view,
                     new Rect(newX, newY, rect.Width, rect.Height));
                 PositionChanged?.Invoke(this,
-                    new PositionChangedEventArgs(newX, newY));
+                    new PositionChangedEventArgs(_startX, _startY, newX, newY));
                 break;
         }
     }
@@ -90,8 +90,10 @@ public partial class CardView : ContentView
     }
 }
 
-public class PositionChangedEventArgs(double x, double y) : EventArgs
+public class PositionChangedEventArgs(double oldX, double oldY, double x, double y) : EventArgs
 {
+    public double OldX { get; } = oldX;
+    public double OldY { get; } = oldY;
     public double X { get; } = x;
     public double Y { get; } = y;
 }
