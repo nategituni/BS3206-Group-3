@@ -67,143 +67,21 @@ public partial class PuzzlePage : ContentPage
 
     private async void Save_Clicked(object sender, EventArgs e)
     {
-        if (string.IsNullOrEmpty(_stateFilePath))
+        // Open a text box to let user enter puzzle name
+
+        string userEmail = Preferences.Get("UserEmail", null);
+
+        if (string.IsNullOrEmpty(userEmail))
         {
-            var pick = await FilePicker.PickAsync(new PickOptions
-            {
-                PickerTitle = "Save puzzle as…",
-                FileTypes = XmlFileType
-            });
-            if (pick == null)
-                return;
-            _stateFilePath = pick.FullPath;
+            await DisplayAlert("Error", "User email not found. Please log in.", "OK");
+            return;
         }
 
-        // Always re-parse the current UI state back into the parser,
-        // then save it out to the known path.
-        var (ins, gates, outs) = _stateParser.parseCards();
-        _stateParser.SaveCards(_stateFilePath, ins, gates, outs);
+        int userId = await AuthService.GetUserIdByEmailAsync(userEmail);
 
-        await DisplayAlert("Saved", $"Puzzle written to:\n{_stateFilePath}", "OK");
-    }
+        string userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
 
-    private async void Load_Clicked(object sender, EventArgs e)
-    {
-        // 1) Let the user pick an XML file
-        var pick = await FilePicker.PickAsync(new PickOptions { PickerTitle = "Select puzzle XML" });
-        if (pick == null) return;
-
-        // 2) Parse into our single StateParser instance, remember the path
-        var xml = await File.ReadAllTextAsync(pick.FullPath);
-        _stateParser = new StateParser(XDocument.Parse(xml));
-        _stateFilePath = pick.FullPath;
-        var (inputs, logicGates, outputs) = _stateParser.parseCards();
-
-        // 3) Clear existing UI
-        Canvas.Children.Clear();
-        _cardMap.Clear();
-        _connections.Clear();
-        _nextId = 1;
-
-        // 4) Place input cards in column 0
-        const double hSpacing = 200, vSpacing = 120, margin = 20;
-        for (var i = 0; i < inputs.Count; i++)
-        {
-            PlaceCard(inputs[i].Id, "IN",
-                margin,
-                margin + i * vSpacing);
-            _nextId = Math.Max(_nextId, inputs[i].Id + 1);
-        }
-
-        // 5) Compute each logic gate's "level" (the max level of its inputs + 1)
-        var levels = new Dictionary<int, int>();
-        foreach (var ic in inputs)
-            levels[ic.Id] = 0;
-
-        bool progress;
-        do
-        {
-            progress = false;
-            foreach (var g in logicGates)
-            {
-                if (levels.ContainsKey(g.Id)) continue;
-                if (g.Input1Card == null || g.Input2Card == null) continue;
-
-                var id1 = GetCardId(g.Input1Card);
-                var id2 = GetCardId(g.Input2Card);
-                if (!levels.TryGetValue(id1, out var l1) ||
-                    !levels.TryGetValue(id2, out var l2))
-                    continue;
-
-                levels[g.Id] = Math.Max(l1, l2) + 1;
-                progress = true;
-            }
-        } while (progress);
-
-        var maxGateLevel = levels.Values.Where(l => l > 0).DefaultIfEmpty(0).Max();
-
-        // 6) Place gates by level, ordering within each level by barycenter of their inputs
-        foreach (var grp in logicGates
-                     .Where(g => levels.ContainsKey(g.Id))
-                     .GroupBy(g => levels[g.Id])
-                     .OrderBy(g => g.Key))
-        {
-            var level = grp.Key;
-            // compute score = average source‐Y for each gate
-            var ordered = grp
-                .Select(g =>
-                {
-                    var y1 = AbsoluteLayout.GetLayoutBounds(_cardMap[GetCardId(g.Input1Card)]).Y;
-                    var y2 = AbsoluteLayout.GetLayoutBounds(_cardMap[GetCardId(g.Input2Card)]).Y;
-                    return (Gate: g, Score: (y1 + y2) / 2.0);
-                })
-                .OrderBy(x => x.Score)
-                .Select(x => x.Gate)
-                .ToList();
-
-            for (var i = 0; i < ordered.Count; i++)
-            {
-                var g = ordered[i];
-                PlaceCard(g.Id, g.GateType.ToString(),
-                    margin + level * hSpacing,
-                    margin + i * vSpacing);
-                _nextId = Math.Max(_nextId, g.Id + 1);
-            }
-        }
-
-        // 7) Place outputs in the final column
-        var outLevel = maxGateLevel + 1;
-        for (var i = 0; i < outputs.Count; i++)
-        {
-            var oc = outputs[i];
-            PlaceCard(oc.Id, "OUT",
-                margin + outLevel * hSpacing,
-                margin + i * vSpacing);
-            _nextId = Math.Max(_nextId, oc.Id + 1);
-        }
-
-        // 8) Rebuild all permanent wires
-        //    a) Gate inputs
-        foreach (var g in logicGates)
-        {
-            var src1 = GetCardId(g.Input1Card);
-            var src2 = GetCardId(g.Input2Card);
-            if (g.Input1Card != null)
-                CreateConnection(src1, g.Id, 1);
-            if (g.Input2Card != null)
-                CreateConnection(src2, g.Id, 2);
-        }
-
-        //    b) Outputs
-        foreach (var oc in outputs)
-        {
-            var src = GetCardId(oc.Input1Card);
-            if (oc.Input1Card != null)
-                CreateConnection(src, oc.Id, 1);
-        }
-
-        // 9) Finally, adjust the canvas to fit everything
-        UpdateCanvasSize();
+        await PuzzleService.SavePuzzleAsync(userId, userInput);
     }
 
     private void Clear_Clicked(object s, EventArgs e)
