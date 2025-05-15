@@ -56,7 +56,7 @@ namespace GroupProject.ViewModels
             if (success)
             {
                 Preferences.Set("UserEmail", Email);
-                await Shell.Current.GoToAsync("//Dashboard");
+                await Shell.Current.GoToAsync("//DashboardPage");
             }
             else
             {
@@ -66,7 +66,7 @@ namespace GroupProject.ViewModels
 
         private async Task GoToRegisterAsync()
         {
-            await Shell.Current.GoToAsync("//Register");
+            await Shell.Current.GoToAsync("//RegisterPage");
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

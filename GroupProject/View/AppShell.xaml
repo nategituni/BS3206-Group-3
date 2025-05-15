@@ -8,24 +8,29 @@
     Title="GroupProject">
 
     <ShellContent
-        Title="Login"
         ContentTemplate="{DataTemplate local:LoginPage}"
         Route="LoginPage" />
 
     <ShellContent
-        Title="Register"
         ContentTemplate="{DataTemplate local:RegisterPage}"
         Route="RegisterPage" />
 
     <ShellContent
-        Title="Dashboard"
         ContentTemplate="{DataTemplate local:DashboardPage}"
         Route="DashboardPage" />
+
+    <ShellContent
+        ContentTemplate="{DataTemplate local:AccountPage}"
+        Route="AccountPage" />
 
     <ShellContent
         Title="Sandbox"
         ContentTemplate="{DataTemplate local:PuzzlePage}"
         Route="PuzzlePage" />
+
+    <ShellContent
+        ContentTemplate="{DataTemplate local:TrendingPage}"
+        Route="TrendingPage" />
 
     <!-- <ShellContent
         Title="MichaelsPage"
