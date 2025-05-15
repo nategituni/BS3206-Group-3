@@ -71,4 +71,10 @@
 		<PackageReference Include="SendGrid" Version="9.29.3" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiXaml Update="View\TrendingPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
 </Project>

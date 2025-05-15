@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="GroupProject.View.RegisterPage"
-             Title="Register">
+             x:Class="GroupProject.View.RegisterPage" >
 
-	<VerticalStackLayout Padding="20" Spacing="15">
+    <VerticalStackLayout Padding="20" Spacing="15">
 		<Entry Placeholder="Full Name" Text="{Binding FullName}" />
 		<Entry Placeholder="Email" Text="{Binding Email}" />
 		<Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />

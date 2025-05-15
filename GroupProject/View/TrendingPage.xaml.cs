@@ -2,16 +2,17 @@ using GroupProject.ViewModels;
 
 namespace GroupProject.View;
 
-public partial class AccountPage : ContentPage
+public partial class TrendingPage : ContentPage
 {
-    public AccountPage()
+    public TrendingPage()
     {
         InitializeComponent();
-        BindingContext = new AccountViewModel();
+        BindingContext = new TrendingPageViewModel();
     }
 
     private async void OnBackToDashboardClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("///DashboardPage");
     }
+
 }
