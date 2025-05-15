@@ -14,9 +14,9 @@ public class LogicGateCard : Card, IOutputProvider
 
     public GateTypeEnum GateType { get; set; }
     public bool Input1 { get; set; }
-    public IOutputProvider Input1Card { get; set; }
+    public IOutputProvider? Input1Card { get; set; }
     public bool Input2 { get; set; }
-    public IOutputProvider Input2Card { get; set; }
+    public IOutputProvider? Input2Card { get; set; }
     public bool Output { get; set; }
 
     public void CalculateOutput()

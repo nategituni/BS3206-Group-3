@@ -21,14 +21,13 @@ public partial class PuzzlePage : ContentPage
 
     private readonly List<Connection> _connections = new();
 
-    private readonly string statePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+    private readonly string _statePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
 
     private Dictionary<int, CardView> _cardMap = new();
-    private double _dotStartX, _dotStartY;
 
     // ── Card drag ──────────────────────────────────────────────────────
 
-    private CancellationTokenSource _dragEndCts;
+    private CancellationTokenSource? _dragEndCts;
 
     // Wiring state
     private bool _isDrawingWire;
@@ -37,9 +36,9 @@ public partial class PuzzlePage : ContentPage
     private int _nextId = 1;
     private string _stateFilePath = string.Empty;
     private StateParser _stateParser;
-    private BoxView _tempDot;
-    private Line _tempWire;
-    private BoxView _wireOverlay;
+    private BoxView? _tempDot;
+    private Line? _tempWire;
+    private BoxView? _wireOverlay;
     private int _wireSrcId;
     private double _wireStartX, _wireStartY;
 
@@ -55,16 +54,17 @@ public partial class PuzzlePage : ContentPage
             {
                 Text = g.ToString()
             };
-            button.Clicked += (s, e) => { AddGate(g.ToString()); };
+            button.Clicked += (_,_) => { AddGate(g.ToString()); };
             Sidebar.Children.Add(button);
         }
 
-        SizeChanged += (_, __) => UpdateCanvasSize();
+        SizeChanged += (_, _) => UpdateCanvasSize();
         _stateParser = new StateParser();
 
-        loadInitialCanvas();
+        LoadInitialCanvas();
     }
 
+    
     private async void Save_Clicked(object sender, EventArgs e)
     {
         // Open a text box to let user enter puzzle name
@@ -86,7 +86,7 @@ public partial class PuzzlePage : ContentPage
 
     private void Clear_Clicked(object s, EventArgs e)
     {
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
         xmlService.ClearStateFile();
 
@@ -104,7 +104,7 @@ public partial class PuzzlePage : ContentPage
 
         var calculateParser = new StateParser();
 
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
         var (_, _, outputCards) = calculateParser.parseCards();
 
@@ -128,7 +128,7 @@ public partial class PuzzlePage : ContentPage
 
     private void AddGate(string gateType)
     {
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
         // Fetch all existing IDs
         var existingIds = xmlService.GetAllIds();
@@ -158,12 +158,10 @@ public partial class PuzzlePage : ContentPage
         }
         else if (gateType == "Output")
         {
-            cv.InputPortTapped += OnInTapped;
             xmlService.AddOutputCard(id, 0, vm.X, vm.Y);
         }
         else
         {
-            cv.InputPortTapped += OnInTapped;
             cv.OutputPortTapped += OnOutTapped;
             xmlService.AddLogicGateCard(id, gateType, 0, 0, vm.X, vm.Y);
         }
@@ -172,9 +170,10 @@ public partial class PuzzlePage : ContentPage
         UpdateCanvasSize();
     }
 
-    private void Card_DeleteRequested(object sender, EventArgs e)
+    private void Card_DeleteRequested(object? sender, EventArgs e)
     {
         var cardView = sender as CardView;
+        
         if (cardView == null)
             return;
 
@@ -201,12 +200,6 @@ public partial class PuzzlePage : ContentPage
         }
 
         UpdateCanvasSize();
-    }
-
-    private void DeleteConnection(Connection connection)
-    {
-        Canvas.Children.Remove(connection.LineShape);
-        _connections.Remove(connection);
     }
 
     private Point GetNearestFreeSpot(Point start, Size gateSize)
@@ -254,11 +247,11 @@ public partial class PuzzlePage : ContentPage
         return false;
     }
 
-    private void OnCardMoved(object s, PositionChangedEventArgs e)
+    private void OnCardMoved(object? s, PositionChangedEventArgs e)
     {
         if (_isDrawingWire) return;
 
-        var cv = (CardView)s;
+        var cv = s as CardView;
         var id = _cardMap.First(kvp => kvp.Value == cv).Key;
 
         foreach (var c in _connections.Where(c => c.SourceCardId == id || c.TargetCardId == id))
@@ -276,7 +269,7 @@ public partial class PuzzlePage : ContentPage
         {
             if (!t.IsCanceled)
             {
-                var xmlService = new XmlStateService(statePath);
+                var xmlService = new XmlStateService(_statePath);
                 xmlService.UpdateCardPosition(id, newX, newY);
             }
         }, TaskScheduler.FromCurrentSynchronizationContext());
@@ -286,12 +279,12 @@ public partial class PuzzlePage : ContentPage
 
     // ── Start wiring on output tap ──────────────────────────────────────
 
-    private void OnOutTapped(object sender, EventArgs e)
+    private void OnOutTapped(object? sender, EventArgs e)
     {
         if (_isDrawingWire) return;
 
         // 1) compute origin
-        var cv = (CardView)sender;
+        var cv = sender as CardView;
         _wireSrcId = _cardMap.First(kvp => kvp.Value == cv).Key;
         var b = AbsoluteLayout.GetLayoutBounds(cv);
         _wireStartX = b.X + b.Width;
@@ -337,9 +330,9 @@ public partial class PuzzlePage : ContentPage
         Canvas.Children.Add(_wireOverlay);
     }
 
-    private void OnWireOverlayPan(object sender, PanUpdatedEventArgs e)
+    private void OnWireOverlayPan(object? sender, PanUpdatedEventArgs e)
     {
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
         if (!_isDrawingWire) return;
 
@@ -352,6 +345,7 @@ public partial class PuzzlePage : ContentPage
             AbsoluteLayout.SetLayoutBounds(_tempDot,
                 new Rect(cx - 6, cy - 6, 12, 12));
 
+            if (_tempWire == null) return;
             _tempWire.X2 = cx;
             _tempWire.Y2 = cy;
         }
@@ -388,6 +382,7 @@ public partial class PuzzlePage : ContentPage
                     if (!_connections.Any(c => c.TargetCardId == tgtId && c.TargetInputIndex == 1))
                     {
                         // Snap the temporary wire to the input point.
+                        if (_tempWire == null) return;
                         _tempWire.X2 = in1.X;
                         _tempWire.Y2 = in1.Y;
 
@@ -418,7 +413,7 @@ public partial class PuzzlePage : ContentPage
 
                         // Attach a tap gesture recognizer for bringing up the delete button.
                         var tapRecognizer = new TapGestureRecognizer();
-                        tapRecognizer.Tapped += (s, e) =>
+                        tapRecognizer.Tapped += (_,_) =>
                         {
                             Debug.WriteLine("Connection hit area tapped!");
                             OnConnectionTapped(newConnection);
@@ -448,6 +443,7 @@ public partial class PuzzlePage : ContentPage
                 {
                     if (!_connections.Any(c => c.TargetCardId == tgtId && c.TargetInputIndex == 2))
                     {
+                        if (_tempWire == null) return;
                         _tempWire.X2 = in2.X;
                         _tempWire.Y2 = in2.Y;
                         var newConnection = new Connection
@@ -471,7 +467,7 @@ public partial class PuzzlePage : ContentPage
                         AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
 
                         var tapRecognizer = new TapGestureRecognizer();
-                        tapRecognizer.Tapped += (s, e) =>
+                        tapRecognizer.Tapped += (_,_) =>
                         {
                             Debug.WriteLine("Connection hit area tapped!");
                             OnConnectionTapped(newConnection);
@@ -512,7 +508,7 @@ public partial class PuzzlePage : ContentPage
 
     // ── Finish wiring on input tap ─────────────────────────────────────
 
-    private static int GetCardId(IOutputProvider p)
+    private static int GetCardId(IOutputProvider? p)
     {
         return p switch
         {
@@ -521,87 +517,6 @@ public partial class PuzzlePage : ContentPage
             _ => 0
         };
     }
-
-    private void OnInTapped(object sender, int inputIndex)
-    {
-        // Console.WriteLine("OnInTapped called with inputIndex: " + inputIndex);
-
-        // if (!_isDrawingWire || _tempWire == null)
-        // {
-        // 	System.Diagnostics.Debug.WriteLine("Not drawing wire or _tempWire is null.");
-        // 	return;
-        // }
-
-        // var cv = (CardView)sender;
-        // var tgt = _cardMap.First(kvp => kvp.Value == cv).Key;
-        // var b = AbsoluteLayout.GetLayoutBounds(cv);
-
-        // bool alreadyConnected = _connections.Any(c => c.TargetCardId == tgt && c.TargetInputIndex == inputIndex);
-        // if (alreadyConnected)
-        // {
-        // 	System.Diagnostics.Debug.WriteLine("Input already connected.");
-        // 	Canvas.Children.Remove(_wireOverlay);
-        // 	_wireOverlay = null;
-        // 	_isDrawingWire = false;
-        // 	_tempDot = null;
-        // 	_tempWire = null;
-        // 	return;
-        // }
-
-        // // Set the final endpoint for the connection.
-        // _tempWire.X2 = b.X;
-        // _tempWire.Y2 = b.Y + b.Height * (inputIndex == 1 ? 0.25 : 0.75);
-
-        // var newConnection = new Connection
-        // {
-        // 	SourceCardId = _wireSrcId,
-        // 	TargetCardId = tgt,
-        // 	TargetInputIndex = inputIndex,
-        // 	LineShape = _tempWire
-        // };
-
-        // // Create a container for the hit area that will cover the connection.
-        // var hitArea = new ContentView
-        // {
-        // 	// Temporarily set to Black so you can see it.
-        // 	BackgroundColor = Colors.Black,
-        // 	InputTransparent = false  // Ensure this view can receive taps.
-        // };
-
-        // // Calculate a bounding box for the hit area around the connection line.
-        // double margin = 10; // extra margin around the line
-        // double minX = Math.Min(_tempWire.X1, _tempWire.X2) - margin;
-        // double minY = Math.Min(_tempWire.Y1, _tempWire.Y2) - margin;
-        // double width = Math.Abs(_tempWire.X2 - _tempWire.X1) + margin * 2;
-        // double height = Math.Abs(_tempWire.Y2 - _tempWire.Y1) + margin * 2;
-
-        // // Output the calculated bounds for debugging.
-        // System.Diagnostics.Debug.WriteLine($"HitArea bounds: minX: {minX}, minY: {minY}, width: {width}, height: {height}");
-        // AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-        // // Attach a tap gesture recognizer to the hit area container.
-        // var tapRecognizer = new TapGestureRecognizer();
-        // tapRecognizer.Tapped += (s, e) =>
-        // {
-        // 	System.Diagnostics.Debug.WriteLine("Hit area tapped!");
-        // 	OnConnectionTapped(newConnection);
-        // };
-        // hitArea.GestureRecognizers.Add(tapRecognizer);
-
-        // // Add the connection line and the hit area container to the canvas.
-        // Canvas.Children.Add(_tempWire);
-        // Canvas.Children.Add(hitArea);
-
-        // _connections.Add(newConnection);
-
-        // // Remove the temporary overlay and clean up.
-        // Canvas.Children.Remove(_wireOverlay);
-        // _wireOverlay = null;
-        // _isDrawingWire = false;
-        // _tempDot = null;
-        // _tempWire = null;
-    }
-
 
     private async void OnConnectionTapped(Connection connection)
     {
@@ -625,7 +540,7 @@ public partial class PuzzlePage : ContentPage
             CornerRadius = 15 // Circular button.
         };
 
-        deleteButton.Clicked += (s, e) =>
+        deleteButton.Clicked += (_,_) =>
         {
             // Remove connection's visual elements.
             if (Canvas.Children.Contains(connection.LineShape))
@@ -644,7 +559,7 @@ public partial class PuzzlePage : ContentPage
         AbsoluteLayout.SetLayoutBounds(deleteButton, new Rect(centerX - 15, centerY - 15, 30, 30));
         Canvas.Children.Add(deleteButton);
 
-        deleteButton.Clicked += (s, e) =>
+        deleteButton.Clicked += (_,_) =>
         {
             if (Canvas.Children.Contains(connection.LineShape))
                 Canvas.Children.Remove(connection.LineShape);
@@ -709,7 +624,6 @@ public partial class PuzzlePage : ContentPage
 
         cv.PositionChanged += OnCardMoved;
         cv.OutputPortTapped += OnOutTapped;
-        cv.InputPortTapped += OnInTapped;
 
         _cardMap[id] = cv;
     }
@@ -738,20 +652,20 @@ public partial class PuzzlePage : ContentPage
         // 1. Gather all card info from the XML.
         var cards = new List<CardInfo>();
 
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
-        var _doc = xmlService.Document;
+        var doc = xmlService.Document;
 
         // Assume _doc is your XML document that holds the state.
         // Input cards (have no dependency)
-        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
         {
             var oldId = (int)elem.Attribute("id");
             cards.Add(new CardInfo { OldId = oldId, Type = "Input" });
         }
 
         // Logic gate cards (depend on two inputs possibly).
-        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
         {
             var oldId = (int)elem.Attribute("id");
             var info = new CardInfo { OldId = oldId, Type = "LogicGate" };
@@ -768,7 +682,7 @@ public partial class PuzzlePage : ContentPage
         }
 
         // Output cards (depend on one input).
-        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
         {
             var oldId = (int)elem.Attribute("id");
             var info = new CardInfo { OldId = oldId, Type = "Output" };
@@ -778,15 +692,11 @@ public partial class PuzzlePage : ContentPage
             cards.Add(info);
         }
 
-        // 2. Build a dependency graph and perform a topological sort.
-        // Create a lookup dictionary keyed on old ID.
-        var lookup = cards.ToDictionary(c => c.OldId);
-
         // Compute in-degrees for each card.
         var inDegree = new Dictionary<int, int>();
         foreach (var card in cards) inDegree[card.OldId] = 0;
         foreach (var card in cards)
-        foreach (var dep in card.Dependencies)
+        foreach (var _ in card.Dependencies)
             // Increase in-degree for the card that depends on something.
             // (Here, each card's dependency is not about being depended upon; rather, the card
             // itself should have an in-degree corresponding to its number of dependencies.)
@@ -830,14 +740,14 @@ public partial class PuzzlePage : ContentPage
 
         // 4. Update the XML: 
         // Update input cards
-        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
         {
             var oldId = (int)elem.Attribute("id");
             if (idMapping.ContainsKey(oldId)) elem.SetAttributeValue("id", idMapping[oldId]);
         }
 
         // Update logic gate cards (update id, input1, input2)
-        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
         {
             var oldId = (int)elem.Attribute("id");
             if (idMapping.ContainsKey(oldId))
@@ -854,7 +764,7 @@ public partial class PuzzlePage : ContentPage
         }
 
         // Update output cards (update id and input1)
-        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
         {
             var oldId = (int)elem.Attribute("id");
             if (idMapping.ContainsKey(oldId))
@@ -897,20 +807,20 @@ public partial class PuzzlePage : ContentPage
     }
 
 
-    private void loadInitialCanvas()
+    private void LoadInitialCanvas()
     {
-        var xmlService = new XmlStateService(statePath);
+        var xmlService = new XmlStateService(_statePath);
 
-        var _doc = xmlService.Document;
+        var doc = xmlService.Document;
 
-        foreach (var elem in _doc.Descendants("InputCards").Elements("ICard"))
+        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
         {
-            var cardID = (int)elem.Attribute("id");
+            var cardId = (int)elem.Attribute("id");
             var gateType = "Input";
             var xPos = (double)elem.Attribute("xPos");
             var yPos = (double)elem.Attribute("yPos");
 
-            var vm = new CardViewModel(cardID, gateType);
+            var vm = new CardViewModel(cardId, gateType);
 
             vm.X = xPos;
             vm.Y = yPos;
@@ -923,19 +833,18 @@ public partial class PuzzlePage : ContentPage
             AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
             Canvas.Children.Add(cv);
 
-            _cardMap[cardID] = cv;
+            _cardMap[cardId] = cv;
             UpdateCanvasSize();
         }
 
-        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
         {
-            var cardID = (int)elem.Attribute("id");
+            var cardId = (int)elem.Attribute("id");
             var gateType = "Output";
             var xPos = (double)elem.Attribute("xPos");
             var yPos = (double)elem.Attribute("yPos");
-            var input1Id = (int)elem.Attribute("input1");
 
-            var vm = new CardViewModel(cardID, gateType);
+            var vm = new CardViewModel(cardId, gateType);
 
             vm.X = xPos;
             vm.Y = yPos;
@@ -943,23 +852,20 @@ public partial class PuzzlePage : ContentPage
             var cv = new CardView { BindingContext = vm };
             cv.DeleteRequested += Card_DeleteRequested;
             cv.PositionChanged += OnCardMoved;
-            cv.InputPortTapped += OnInTapped;
 
             AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
             Canvas.Children.Add(cv);
 
-            _cardMap[cardID] = cv;
+            _cardMap[cardId] = cv;
             UpdateCanvasSize();
         }
 
-        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
         {
             var cardID = (int)elem.Attribute("id");
             var gateType = (string)elem.Attribute("gateType");
             var xPos = (double)elem.Attribute("xPos");
             var yPos = (double)elem.Attribute("yPos");
-            var input1Id = (int)elem.Attribute("input1");
-            var input2Id = (int)elem.Attribute("input2");
 
             var vm = new CardViewModel(cardID, gateType);
 
@@ -970,7 +876,6 @@ public partial class PuzzlePage : ContentPage
 
             cv.DeleteRequested += Card_DeleteRequested;
             cv.PositionChanged += OnCardMoved;
-            cv.InputPortTapped += OnInTapped;
             cv.OutputPortTapped += OnOutTapped;
 
             AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
@@ -981,7 +886,7 @@ public partial class PuzzlePage : ContentPage
         }
 
         // Rebuild connections
-        foreach (var elem in _doc.Descendants("OutputCards").Elements("OCard"))
+        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
         {
             var cardId = (int)elem.Attribute("id");
             var sourceId = (int)elem.Attribute("input1"); // For outputs, input1 is the connected source
@@ -1033,7 +938,7 @@ public partial class PuzzlePage : ContentPage
 
                 // Attach a tap gesture recognizer for bringing up the delete button.
                 var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (s, e) =>
+                tapRecognizer.Tapped += (_,_) =>
                 {
                     Debug.WriteLine("Connection hit area tapped!");
                     OnConnectionTapped(newConnection);
@@ -1051,7 +956,7 @@ public partial class PuzzlePage : ContentPage
         }
 
         // Rebuild connections for LogicGateCards (can have input1 and/or input2)
-        foreach (var elem in _doc.Descendants("LogicGateCards").Elements("LogicGate"))
+        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
         {
             var cardId = (int)elem.Attribute("id");
             var input1SourceId = (int)elem.Attribute("input1");
@@ -1109,7 +1014,7 @@ public partial class PuzzlePage : ContentPage
 
                 // Add a tap recognizer to let the user delete the connection.
                 var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (s, e) =>
+                tapRecognizer.Tapped += (_, _) =>
                 {
                     Debug.WriteLine("Connection hit area tapped!");
                     OnConnectionTapped(newConnection);
@@ -1169,7 +1074,7 @@ public partial class PuzzlePage : ContentPage
                 AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
 
                 var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (s, e) =>
+                tapRecognizer.Tapped += (_,_) =>
                 {
                     Debug.WriteLine("Connection hit area tapped!");
                     OnConnectionTapped(newConnection);
@@ -1191,7 +1096,7 @@ public partial class PuzzlePage : ContentPage
     {
         public int OldId { get; set; }
         public int NewId { get; set; }
-        public string Type { get; set; } // "Input", "LogicGate", "Output"
+        public required string Type { get; set; } // "Input", "LogicGate", "Output"
         public List<int> Dependencies { get; } = new(); // older IDs of cards this one depends on.
     }
 }
