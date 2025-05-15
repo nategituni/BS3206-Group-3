@@ -15,6 +15,9 @@ public partial class PuzzlePage : ContentPage
 
     private Dictionary<int, CardView> _cardMap = new();
 
+    // Dictionary to keep track of occupied areas on the canvas (efficiently due to hashing)
+    private readonly Dictionary<long, HashSet<int>> _occupiedAreas = new();
+
     private CancellationTokenSource? _dragEndCts;
 
     // Wiring state
@@ -74,6 +77,7 @@ public partial class PuzzlePage : ContentPage
             vm.ClearState();
 
         Canvas.Children.Clear();
+        _occupiedAreas.Clear();
         _cardMap.Clear();
         _connections.Clear();
 
@@ -98,10 +102,20 @@ public partial class PuzzlePage : ContentPage
         if (enableOutputTap)
             cv.OutputPortTapped += OnOutTapped;
 
-        AbsoluteLayout.SetLayoutBounds(cv, new Rect(x, y, 120, 80));
+        var rect = new Rect(x, y, 120, 80);
+        AbsoluteLayout.SetLayoutBounds(cv, rect);
         Canvas.Children.Add(cv);
 
         _cardMap[id] = cv;
+        var key = MathHelper.LongHash(MathHelper.PositionToAreaCoord(x), MathHelper.PositionToAreaCoord(y));
+
+        ForEachRectangleAreaKey(rect, k =>
+        {
+            if (!_occupiedAreas.TryGetValue(key, out var set))
+                _occupiedAreas[key] = set = new HashSet<int>();
+
+            set.Add(id);
+        });
 
         return cv;
     }
@@ -232,9 +246,19 @@ public partial class PuzzlePage : ContentPage
         var cardId = vm.Id;
         // Remove the card from the canvas
         Canvas.Children.Remove(cardView);
-        // Remove it from your map
-        if (_cardMap.ContainsKey(cardId))
-            _cardMap.Remove(cardId);
+        var bounds = AbsoluteLayout.GetLayoutBounds(cardView);
+        var rect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+        ForEachRectangleAreaKey(rect, key =>
+        {
+            if (_occupiedAreas.TryGetValue(key, out var set))
+            {
+                set.Remove(cardId);
+                if (set.Count == 0)
+                    _occupiedAreas.Remove(key);
+            }
+        });
+
+        _cardMap.Remove(cardId);
 
         // Also remove any connections that reference this card
         var connectionsToRemove = _connections
@@ -251,47 +275,134 @@ public partial class PuzzlePage : ContentPage
 
     private Point GetNearestFreeSpot(Point start, Size gateSize)
     {
-        double step = 10; // increment in pixels
-        var bestDistance = double.MaxValue;
-        var bestCandidate = start;
+        const double step = 10;
 
-        // Search in a square around the spawn start.
-        // Adjust the range if necessary (here, -300 to +300 pixels in both dimensions)
-        for (var offsetX = -300; offsetX <= 300; offsetX += (int)step)
-        for (var offsetY = -300; offsetY <= 300; offsetY += (int)step)
+        // 1) Exponentially expand until we find at least one free spot on the ring
+        double lowRadius = 0;
+        double highRadius = step;
+        while (!ExistsFreeOnRing(start, gateSize, highRadius, step))
         {
-            var candidate = new Point(start.X + offsetX, start.Y + offsetY);
+            lowRadius = highRadius;
+            highRadius *= 2;
+        }
 
-            if (candidate.X < 10 || candidate.Y < 10)
-                continue;
+        // 2) Binary-search that interval down to within one “step”
+        while (highRadius - lowRadius > step)
+        {
+            double mid = (lowRadius + highRadius) / 2;
+            if (ExistsFreeOnRing(start, gateSize, mid, step))
+                highRadius = mid;
+            else
+                lowRadius = mid;
+        }
 
-            var candidateRect = new Rect(candidate, gateSize);
-            if (!IsOverlapping(candidateRect))
+        // 3) Final local scan in the square [0..highRadius]×[0..highRadius]
+        return FindNearestInSquare(start, gateSize, highRadius, step);
+    }
+
+    private bool ExistsFreeOnRing(Point center, Size gateSize, double radius, double step)
+    {
+        // Top and bottom edges of the ring:
+        for (double dx = 0; dx <= radius; dx += step)
+        {
+            foreach (var dy in new[] { 0d, radius })
             {
-                var distance = Math.Sqrt(offsetX * offsetX + offsetY * offsetY);
-                if (distance < bestDistance)
+                var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
+                if (!IsOverlapping(r)) return true;
+            }
+        }
+
+        // Left and right edges of the ring (excluding corners already checked):
+        for (double dy = step; dy < radius; dy += step)
+        {
+            foreach (var dx in new[] { 0d, radius })
+            {
+                var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
+                if (!IsOverlapping(r)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Point FindNearestInSquare(Point center, Size gateSize, double radius, double step)
+    {
+        Point best = new Point(center.X, center.Y);
+        double bestDist2 = double.MaxValue;
+
+        for (double dx = 0; dx <= radius; dx += step)
+        for (double dy = 0; dy <= radius; dy += step)
+        {
+            var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
+            if (!IsOverlapping(r))
+            {
+                double d2 = dx * dx + dy * dy;
+                if (d2 < bestDist2)
                 {
-                    bestDistance = distance;
-                    bestCandidate = candidate;
+                    bestDist2 = d2;
+                    best = new Point(center.X + dx, center.Y + dy);
                 }
             }
         }
 
-        return bestCandidate;
+        return best;
+    }
+
+    private void ForEachRectangleAreaKey(Rect rect, Action<long> consumer)
+    {
+        consumer(MathHelper.LongHash(
+            MathHelper.PositionToAreaCoord(rect.X),
+            MathHelper.PositionToAreaCoord(rect.Y)));
+
+        consumer(MathHelper.LongHash(
+            MathHelper.PositionToAreaCoord(rect.Right),
+            MathHelper.PositionToAreaCoord(rect.Bottom)));
+
+        consumer(MathHelper.LongHash(
+            MathHelper.PositionToAreaCoord(rect.X),
+            MathHelper.PositionToAreaCoord(rect.Bottom)));
+
+        consumer(MathHelper.LongHash(
+            MathHelper.PositionToAreaCoord(rect.Right),
+            MathHelper.PositionToAreaCoord(rect.Y)));
     }
 
     private bool IsOverlapping(Rect candidateRect)
     {
-        foreach (var card in _cardMap.Values)
-        {
-            var existingRect = AbsoluteLayout.GetLayoutBounds(card);
-            var expandedRect = new Rect(existingRect.X - 10, existingRect.Y - 10, existingRect.Width + 20,
-                existingRect.Height + 20);
-            if (candidateRect.IntersectsWith(expandedRect))
-                return true;
-        }
+        var expandedCandidateRect = new Rect(candidateRect.X - 10, candidateRect.Y - 10,
+            candidateRect.Width + 20, candidateRect.Height + 20);
 
-        return false;
+        // Check if the candidate rectangle overlaps with any existing rectangles
+        bool intersects = false;
+
+        ForEachRectangleAreaKey(expandedCandidateRect, key =>
+        {
+            var coords = MathHelper.Unhash(key);
+            var x = coords[0];
+            var y = coords[1];
+
+            for (int dX = -1; dX <= 1; dX++)
+            for (int dY = -1; dY <= 1; dY++)
+            {
+                var newKey = MathHelper.LongHash(x + dX, y + dY);
+                if (_occupiedAreas.TryGetValue(newKey, out var set))
+                {
+                    foreach (var id in set)
+                    {
+                        var cv = _cardMap[id];
+                        var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+                        var existingRect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+                        if (expandedCandidateRect.IntersectsWith(existingRect))
+                        {
+                            intersects = true;
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+
+        return intersects;
     }
 
     private void OnCardMoved(object? s, PositionChangedEventArgs e)
@@ -310,6 +421,30 @@ public partial class PuzzlePage : ContentPage
         var bounds = AbsoluteLayout.GetLayoutBounds(cv);
         var newX = bounds.X;
         var newY = bounds.Y;
+
+        var oldX = e.OldX;
+        var oldY = e.OldY;
+        var oldRect = new Rect(oldX, oldY, bounds.Width, bounds.Height);
+        var newRect = new Rect(newX, newY, bounds.Width, bounds.Height);
+
+        ForEachRectangleAreaKey(oldRect, key =>
+        {
+            if (_occupiedAreas.TryGetValue(key, out var set))
+            {
+                set.Remove(id);
+
+                if (set.Count == 0)
+                    _occupiedAreas.Remove(key);
+            }
+        });
+
+        ForEachRectangleAreaKey(newRect, key =>
+        {
+            if (!_occupiedAreas.TryGetValue(key, out var set))
+                _occupiedAreas[key] = set = new HashSet<int>();
+
+            set.Add(id);
+        });
 
         // Cancel previous pending updates to avoid unnecessary writes
         _dragEndCts?.Cancel();
@@ -339,20 +474,32 @@ public partial class PuzzlePage : ContentPage
     {
         const double snapRadius = 25;
 
-        foreach (var kvp in _cardMap)
+        var rect = new Rect(dropX - snapRadius, dropY - snapRadius, snapRadius * 2, snapRadius * 2);
+
+        var snapped = false;
+
+        ForEachRectangleAreaKey(rect, k =>
         {
-            int tgtId = kvp.Key;
-            var cv = kvp.Value;
-            var bounds = AbsoluteLayout.GetLayoutBounds(cv);
-            var in1 = new Point(bounds.X, bounds.Y + bounds.Height * 0.25);
-            var in2 = new Point(bounds.X, bounds.Y + bounds.Height * 0.75);
+            if (_occupiedAreas.TryGetValue(k, out var set))
+            {
+                foreach (var tgtId in set)
+                {
+                    var cv = _cardMap[tgtId];
+                    var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+                    var in1 = new Point(bounds.X, bounds.Y + bounds.Height * 0.25);
+                    var in2 = new Point(bounds.X, bounds.Y + bounds.Height * 0.75);
 
-            if (SnapToInputPort(tgtId, dropX, dropY, snapRadius, in1, 1) ||
-                SnapToInputPort(tgtId, dropX, dropY, snapRadius, in2, 2))
-                return true;
-        }
+                    if (SnapToInputPort(tgtId, dropX, dropY, snapRadius, in1, 1) ||
+                        SnapToInputPort(tgtId, dropX, dropY, snapRadius, in2, 2))
+                    {
+                        snapped = true;
+                        return;
+                    }
+                }
+            }
+        });
 
-        return false;
+        return snapped;
     }
 
     private bool SnapToInputPort(int tgtId, double dropX, double dropY, double snapRadius, Point in1, int portIndex)
@@ -568,6 +715,7 @@ public partial class PuzzlePage : ContentPage
     {
         Canvas.Children.Clear();
         _cardMap.Clear();
+        _occupiedAreas.Clear();
         _connections.Clear();
 
         if (BindingContext is not PuzzleViewModel vm)
