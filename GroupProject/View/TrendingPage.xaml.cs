@@ -1,4 +1,4 @@
-using GroupProject.ViewModels;
+using GroupProject.ViewModel;
 
 namespace GroupProject.View;
 
@@ -14,5 +14,4 @@ public partial class TrendingPage : ContentPage
     {
         await Shell.Current.GoToAsync("///DashboardPage");
     }
-
 }

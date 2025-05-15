@@ -1,57 +1,90 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using GroupProject.Model.LogicModel;
+using GroupProject.Services;
 
-namespace GroupProject.ViewModel
+namespace GroupProject.ViewModel;
+
+public class CardViewModel : INotifyPropertyChanged
 {
-    public class CardViewModel : INotifyPropertyChanged
+    private readonly XmlStateService _xmlService;
+    public int Id { get; set; }
+    public GateTypeEnum GateType { get; }
+
+    private string? _currentValue;
+    public string DisplayName => $"{GateType}";
+
+    public string? CurrentValue
     {
-        public int Id { get; set;}
-        public string GateType { get; }
-        public string DisplayName => $"{GateType}"; // #{Id}"; // Temp remove id
-
-        double _x;
-        public double X { get => _x; set { _x = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(X))); } }
-
-        double _y;
-        public double Y { get => _y; set { _y = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Y))); } }
-
-        public CardViewModel(int id, string gateType, double startX = 50, double startY = 50)
+        get => _currentValue;
+        set
         {
-            Id = id;
-            GateType = gateType;
-            X = startX;
-            Y = startY;
+            if (_currentValue == value) return;
 
-			CurrentValue = gateType == "Output" ? "0" : string.Empty;
+            _currentValue = value;
+            OnPropertyChanged();
         }
+    }
 
-		// protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		// {
-		// 	PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		// }
+    private double _x, _y;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+    public double X
+    {
+        get => _x;
+        set
+        {
+            _x = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(X)));
+        }
+    }
 
+    public double Y
+    {
+        get => _y;
+        set
+        {
+            _y = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Y)));
+        }
+    }
 
-		// Output card stuff
+    public CardViewModel(XmlStateService xmlService, int id, GateTypeEnum gateType, double startX = 50,
+        double startY = 50)
+    {
+        Id = id;
+        GateType = gateType;
+        X = startX;
+        Y = startY;
+        _xmlService = xmlService;
 
-		private string _currentValue;
-		public string CurrentValue
-		{
-			get => _currentValue;
-			set
-			{
-				if(_currentValue != value)
-				{
-					_currentValue = value;
-					OnPropertyChanged();
-				}
-			}
-		}
+        CurrentValue = gateType == GateTypeEnum.Output ? "0" : string.Empty;
+    }
 
-		protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void Delete()
+    {
+        switch (GateType)
+        {
+            case GateTypeEnum.Input:
+                _xmlService.DeleteInputCard(Id);
+                break;
+            case GateTypeEnum.Output:
+                _xmlService.DeleteOutputCard(Id);
+                break;
+            default:
+                _xmlService.DeleteLogicGateCard(Id);
+                break;
+        }
+    }
+
+    public void UpdateInputCardValue(bool value)
+    {
+        _xmlService.UpdateInputCardValue(Id, value);
     }
 }

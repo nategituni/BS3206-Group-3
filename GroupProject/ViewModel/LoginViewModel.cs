@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using GroupProject.Services;
 
-namespace GroupProject.ViewModels
+namespace GroupProject.ViewModel
 {
     public class LoginViewModel : INotifyPropertyChanged
     {
