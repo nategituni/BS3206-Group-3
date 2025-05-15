@@ -8,15 +8,10 @@
 
     <ContentPage.ToolbarItems>
         <ToolbarItem
-            Text="Save"
+            Text="Save to Account"
             Order="Primary"
             Priority="0"
             Clicked="Save_Clicked" />
-        <ToolbarItem
-            Text="Load"
-            Order="Primary"
-            Priority="1"
-            Clicked="Load_Clicked" />
 		<ToolbarItem
 			Text="Clear"
 			Order="Primary"
