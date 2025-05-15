@@ -935,7 +935,10 @@ public partial class PuzzlePage : ContentPage
 
         // If there is a cycle, sorted.Count will not equal cards.Count
         if (sorted.Count != cards.Count)
-            throw new Exception("A dependency cycle was detected among the cards. Reshuffling is not possible.");
+        {
+            DisplayAlert("A dependency cycle was detected among the cards. Reshuffling is not possible.", "Please fix your card arrangement.", "OK");
+            return;
+        }
 
         // 3. Assign new IDs in the sorted order.
         var newId = 1;
