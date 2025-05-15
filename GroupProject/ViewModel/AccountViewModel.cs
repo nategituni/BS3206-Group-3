@@ -8,29 +8,44 @@ using GroupProject.Services;
 using GroupProject.Models;
 using GroupProject.View;
 
-namespace GroupProject.ViewModels
+namespace GroupProject.ViewModel
 {
     public class AccountViewModel : INotifyPropertyChanged
     {
         private ImageSource _profileImageSource;
+
         public ImageSource ProfileImageSource
         {
             get => _profileImageSource;
-            set { _profileImageSource = value; OnPropertyChanged(); }
+            set
+            {
+                _profileImageSource = value;
+                OnPropertyChanged();
+            }
         }
 
         private string _fullName;
+
         public string FullName
         {
             get => _fullName;
-            set { _fullName = value; OnPropertyChanged(); }
+            set
+            {
+                _fullName = value;
+                OnPropertyChanged();
+            }
         }
 
         private string _bio;
+
         public string Bio
         {
             get => _bio;
-            set { _bio = value; OnPropertyChanged(); }
+            set
+            {
+                _bio = value;
+                OnPropertyChanged();
+            }
         }
 
         public ObservableCollection<Puzzle> Puzzles { get; set; } = new();
@@ -162,7 +177,8 @@ namespace GroupProject.ViewModels
         {
             if (puzzle == null) return;
 
-            bool confirm = await Shell.Current.DisplayAlert("Confirm", $"Delete puzzle '{puzzle.PuzzleName}'?", "Yes", "No");
+            bool confirm =
+                await Shell.Current.DisplayAlert("Confirm", $"Delete puzzle '{puzzle.PuzzleName}'?", "Yes", "No");
             if (!confirm) return;
 
             await PuzzleService.DeletePuzzleAsync(puzzle.Id);
@@ -170,6 +186,7 @@ namespace GroupProject.ViewModels
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

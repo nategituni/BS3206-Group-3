@@ -1,31 +1,19 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
 using GroupProject.Model.LogicModel;
+using GroupProject.Model.Utilities;
 using GroupProject.Services;
 using GroupProject.ViewModel;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Layouts;
-using Path = System.IO.Path;
 
 namespace GroupProject.View;
 
 public partial class PuzzlePage : ContentPage
 {
-    private static readonly FilePickerFileType XmlFileType = new(new Dictionary<DevicePlatform, IEnumerable<string>>
-    {
-        { DevicePlatform.WinUI, new[] { ".xml", "application/xml" } },
-        { DevicePlatform.MacCatalyst, new[] { "xml" } },
-        { DevicePlatform.iOS, new[] { "public.xml" } },
-        { DevicePlatform.Android, new[] { "text/xml", "application/xml" } }
-    });
-
     private readonly List<Connection> _connections = new();
 
-    private readonly string _statePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
-
     private Dictionary<int, CardView> _cardMap = new();
-
-    // ── Card drag ──────────────────────────────────────────────────────
 
     private CancellationTokenSource? _dragEndCts;
 
@@ -34,8 +22,6 @@ public partial class PuzzlePage : ContentPage
 
     // ID generator
     private int _nextId = 1;
-    private string _stateFilePath = string.Empty;
-    private StateParser _stateParser;
     private BoxView? _tempDot;
     private Line? _tempWire;
     private BoxView? _wireOverlay;
@@ -45,6 +31,7 @@ public partial class PuzzlePage : ContentPage
     public PuzzlePage()
     {
         InitializeComponent();
+        BindingContext = new PuzzleViewModel();
 
         // InitizaliseFilewaterHere Michael
 
@@ -54,126 +41,186 @@ public partial class PuzzlePage : ContentPage
             {
                 Text = g.ToString()
             };
-            button.Clicked += (_,_) => { AddGate(g.ToString()); };
+            button.Clicked += (_, _) => { AddGate(g); };
             Sidebar.Children.Add(button);
         }
 
         SizeChanged += (_, _) => UpdateCanvasSize();
-        _stateParser = new StateParser();
 
         LoadInitialCanvas();
     }
 
-    
     private async void Save_Clicked(object sender, EventArgs e)
     {
-        // Open a text box to let user enter puzzle name
+        if (BindingContext is not PuzzleViewModel vm) return;
 
-        string userEmail = Preferences.Get("UserEmail", null);
-
+        var userEmail = Preferences.Get("UserEmail", null);
         if (string.IsNullOrEmpty(userEmail))
         {
             await DisplayAlert("Error", "User email not found. Please log in.", "OK");
             return;
         }
 
-        int userId = await AuthService.GetUserIdByEmailAsync(userEmail);
+        var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
+        var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
 
-        string userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
-
-        await PuzzleService.SavePuzzleAsync(userId, userInput);
+        if (!string.IsNullOrWhiteSpace(userInput))
+            await vm.SaveAsync(userId, userInput);
     }
 
     private void Clear_Clicked(object s, EventArgs e)
     {
-        var xmlService = new XmlStateService(_statePath);
-
-        xmlService.ClearStateFile();
+        if (BindingContext is PuzzleViewModel vm)
+            vm.ClearState();
 
         Canvas.Children.Clear();
-
         _cardMap.Clear();
         _connections.Clear();
 
         DisplayAlert("State Cleared", "All cards and connections have been removed.", "OK");
     }
 
-    private void Simulate_Clicked(object s, EventArgs e)
+    private CardView CreateCardView(int id, GateTypeEnum type, double x, double y, bool enableOutputTap)
     {
-        ReshuffleIds();
-
-        var calculateParser = new StateParser();
-
-        var xmlService = new XmlStateService(_statePath);
-
-        var (_, _, outputCards) = calculateParser.parseCards();
-
-        xmlService.PrintStateFile();
-
-        // Loop through all children of the canvas
-        foreach (var child in Canvas.Children)
-            if (child is CardView cardView && cardView.BindingContext is CardViewModel viewModel)
-                // Check if this is an output card
-                if (viewModel.GateType.Equals("Output", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Find the matching outputCard from the list using the id
-                    var matchingOutput = outputCards.FirstOrDefault(o => o.Id == viewModel.Id);
-                    if (matchingOutput != null)
-                        // Update the OutputValueLabel text to "1" if true, or "0" if false
-                        cardView.OutputValueLabel.Text = matchingOutput.Output ? "1" : "0";
-                }
-    }
-
-    // ── AddGate helper ─────────────────────────────────────────────────
-
-    private void AddGate(string gateType)
-    {
-        var xmlService = new XmlStateService(_statePath);
-
-        // Fetch all existing IDs
-        var existingIds = xmlService.GetAllIds();
-
-        // Find the next available ID
-        var id = _nextId;
-        while (existingIds.Contains(id)) id++;
-        _nextId = id + 1; // Increment for next addition
-
-        var vm = new CardViewModel(id, gateType);
-        var spawnStart = new Point(50, 50);
-        var candidate = GetNearestFreeSpot(spawnStart, new Size(120, 80));
-
-        vm.X = candidate.X;
-        vm.Y = candidate.Y;
+        if (BindingContext is not PuzzleViewModel pvm)
+            throw new InvalidOperationException("BindingContext is not a PuzzleViewModel");
+        var vm = new CardViewModel(pvm.GetXmlStateService(), id, type)
+        {
+            X = x,
+            Y = y
+        };
 
         var cv = new CardView { BindingContext = vm };
+
         cv.DeleteRequested += Card_DeleteRequested;
-        AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-        Canvas.Children.Add(cv);
         cv.PositionChanged += OnCardMoved;
 
-        if (gateType == "Input")
-        {
+        if (enableOutputTap)
             cv.OutputPortTapped += OnOutTapped;
-            xmlService.AddInputCard(id, false, vm.X, vm.Y);
-        }
-        else if (gateType == "Output")
-        {
-            xmlService.AddOutputCard(id, 0, vm.X, vm.Y);
-        }
-        else
-        {
-            cv.OutputPortTapped += OnOutTapped;
-            xmlService.AddLogicGateCard(id, gateType, 0, 0, vm.X, vm.Y);
-        }
+
+        AbsoluteLayout.SetLayoutBounds(cv, new Rect(x, y, 120, 80));
+        Canvas.Children.Add(cv);
 
         _cardMap[id] = cv;
+
+        return cv;
+    }
+
+    private void BuildConnectionLine(int fromId, int toId, int inputIndex, Point start, Point end)
+    {
+        var connectionWire = new Line
+        {
+            Stroke = new SolidColorBrush(Colors.White),
+            StrokeThickness = 2,
+            X1 = start.X, Y1 = start.Y,
+            X2 = end.X, Y2 = end.Y,
+            InputTransparent = true
+        };
+
+        var connection = new Connection
+        {
+            SourceCardId = fromId,
+            TargetCardId = toId,
+            TargetInputIndex = inputIndex,
+            LineShape = connectionWire
+        };
+
+        var hitArea = new ContentView
+        {
+            BackgroundColor = Colors.Transparent,
+            InputTransparent = false
+        };
+
+        const double margin = 10;
+        var minX = Math.Min(start.X, end.X) - margin;
+        var minY = Math.Min(start.Y, end.Y) - margin;
+        var width = Math.Abs(end.X - start.X) + margin * 2;
+        var height = Math.Abs(end.Y - start.Y) + margin * 2;
+
+        AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
+
+        var tapRecognizer = new TapGestureRecognizer();
+        tapRecognizer.Tapped += (_, _) => OnConnectionTapped(connection);
+        hitArea.GestureRecognizers.Add(tapRecognizer);
+
+        Canvas.Children.Add(connectionWire);
+        Canvas.Children.Add(hitArea);
+
+        connection.HitArea = hitArea;
+        _connections.Add(connection);
+    }
+
+    private void RestoreConnection(int fromId, int toId, int inputIndex)
+    {
+        var sourceCv = _cardMap[fromId];
+        var targetCv = _cardMap[toId];
+
+        var sb = AbsoluteLayout.GetLayoutBounds(sourceCv);
+        var tb = AbsoluteLayout.GetLayoutBounds(targetCv);
+
+        var start = new Point(sb.X + sb.Width, sb.Y + sb.Height / 2);
+        var end = new Point(
+            tb.X,
+            tb.Y + tb.Height * (inputIndex == 1 ? 0.25 : 0.75)
+        );
+
+        BuildConnectionLine(fromId, toId, inputIndex, start, end);
+    }
+
+    private void Simulate_Clicked(object s, EventArgs e)
+    {
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
+
+        var (success, newCardMap) = vm.ReshuffleIds(_cardMap, _connections);
+        if (!success)
+        {
+            DisplayAlert("Error", "Reshuffling failed. Please check your connections.", "OK");
+            return;
+        }
+
+        _cardMap = newCardMap;
+        var outputs = vm.EvaluateOutputs();
+
+        foreach (var child in Canvas.Children)
+        {
+            if (child is CardView cardView && cardView.BindingContext is CardViewModel viewModel)
+            {
+                if (viewModel.GateType == GateTypeEnum.Output)
+                {
+                    var match = outputs.FirstOrDefault(o => o.OutputCardId == viewModel.Id);
+                    cardView.OutputValueLabel.Text = match != default ? (match.Value ? "1" : "0") : "";
+                }
+            }
+        }
+    }
+
+    private void AddGate(GateTypeEnum gateType)
+    {
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
+
+        var existingIds = vm.GetAllIds();
+        var id = _nextId;
+        while (existingIds.Contains(id)) id++;
+        _nextId = id + 1;
+
+        var spawnStart = new Point(50, 50);
+        var position = GetNearestFreeSpot(spawnStart, new Size(120, 80));
+
+        // Create and place the card
+        CreateCardView(id, gateType, position.X, position.Y, gateType != GateTypeEnum.Output);
+
+        // Add to XML
+        vm.AddGate(id, gateType, position.X, position.Y);
+
         UpdateCanvasSize();
     }
 
     private void Card_DeleteRequested(object? sender, EventArgs e)
     {
         var cardView = sender as CardView;
-        
+
         if (cardView == null)
             return;
 
@@ -251,6 +298,9 @@ public partial class PuzzlePage : ContentPage
     {
         if (_isDrawingWire) return;
 
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
+
         var cv = s as CardView;
         var id = _cardMap.First(kvp => kvp.Value == cv).Key;
 
@@ -267,235 +317,141 @@ public partial class PuzzlePage : ContentPage
 
         Task.Delay(500, _dragEndCts.Token).ContinueWith(t =>
         {
-            if (!t.IsCanceled)
-            {
-                var xmlService = new XmlStateService(_statePath);
-                xmlService.UpdateCardPosition(id, newX, newY);
-            }
+            if (t.IsCanceled) return;
+            vm.UpdateCardPosition(id, newX, newY);
         }, TaskScheduler.FromCurrentSynchronizationContext());
 
         UpdateCanvasSize();
     }
 
-    // ── Start wiring on output tap ──────────────────────────────────────
-
     private void OnOutTapped(object? sender, EventArgs e)
     {
-        if (_isDrawingWire) return;
+        if (_isDrawingWire || sender is not CardView cv) return;
 
-        // 1) compute origin
-        var cv = sender as CardView;
-        _wireSrcId = _cardMap.First(kvp => kvp.Value == cv).Key;
-        var b = AbsoluteLayout.GetLayoutBounds(cv);
-        _wireStartX = b.X + b.Width;
-        _wireStartY = b.Y + b.Height / 2;
+        var sourceId = _cardMap.First(kvp => kvp.Value == cv).Key;
+        var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+        var startPoint = new Point(bounds.X + bounds.Width, bounds.Y + bounds.Height / 2);
 
-        // 2) create line
-        _tempWire = new Line
+        BeginWireDrawing(sourceId, startPoint);
+    }
+
+    private bool TrySnapConnection(double dropX, double dropY)
+    {
+        const double snapRadius = 25;
+
+        foreach (var kvp in _cardMap)
         {
-            Stroke = new SolidColorBrush(Colors.White),
-            StrokeThickness = 2,
-            X1 = _wireStartX, Y1 = _wireStartY,
-            X2 = _wireStartX, Y2 = _wireStartY
-        };
-        _tempWire.InputTransparent = true;
-        Canvas.Children.Add(_tempWire);
+            int tgtId = kvp.Key;
+            var cv = kvp.Value;
+            var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+            var in1 = new Point(bounds.X, bounds.Y + bounds.Height * 0.25);
+            var in2 = new Point(bounds.X, bounds.Y + bounds.Height * 0.75);
 
-        // 3) create dot
-        _tempDot = new BoxView
+            if (SnapToInputPort(tgtId, dropX, dropY, snapRadius, in1, 1) ||
+                SnapToInputPort(tgtId, dropX, dropY, snapRadius, in2, 2))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool SnapToInputPort(int tgtId, double dropX, double dropY, double snapRadius, Point in1, int portIndex)
+    {
+        if (BindingContext is not PuzzleViewModel vm)
+            return false;
+
+        if (MathHelper.Distance(dropX, dropY, in1.X, in1.Y) >= snapRadius || _tempWire == null)
+            return false;
+        // Check if input port 1 is available.
+        if (!_connections.Any(c => c.TargetCardId == tgtId && c.TargetInputIndex == portIndex))
         {
-            WidthRequest = 12,
-            HeightRequest = 12,
-            CornerRadius = 6,
-            BackgroundColor = Colors.White
-        };
-        AbsoluteLayout.SetLayoutBounds(_tempDot,
-            new Rect(_wireStartX - 6, _wireStartY - 6, 12, 12));
-        Canvas.Children.Add(_tempDot);
+            // Snap the temporary wire to the input point.
+            _tempWire.X2 = in1.X;
+            _tempWire.Y2 = in1.Y;
 
-        _isDrawingWire = true;
+            // Create a new connection using _tempWire.
+            var newConnection = new Connection
+            {
+                SourceCardId = _wireSrcId,
+                TargetCardId = tgtId,
+                TargetInputIndex = portIndex,
+                LineShape = _tempWire
+            };
 
-        // 4) spawn an overlay that covers the entire canvas and catches all drags
-        _wireOverlay = new BoxView
-        {
-            BackgroundColor = Colors.Transparent,
-        };
-        AbsoluteLayout.SetLayoutFlags(_wireOverlay, AbsoluteLayoutFlags.All);
-        AbsoluteLayout.SetLayoutBounds(_wireOverlay, new Rect(0, 0, 1, 1));
+            // Now create and add the invisible hit area.
+            var hitArea = new ContentView
+            {
+                BackgroundColor =
+                    Colors.Transparent, // set to a visible color (e.g. Colors.Black) for debugging
+                InputTransparent = false // ensure it can receive touch input
+            };
 
-        var pan = new PanGestureRecognizer();
-        pan.PanUpdated += OnWireOverlayPan;
-        _wireOverlay.GestureRecognizers.Add(pan);
+            // Calculate the bounding box for the hit area with extra margin for easier tapping.
+            const double margin = 10;
+            var minX = Math.Min(_tempWire.X1, _tempWire.X2) - margin;
+            var minY = Math.Min(_tempWire.Y1, _tempWire.Y2) - margin;
+            var width = Math.Abs(_tempWire.X2 - _tempWire.X1) + margin * 2;
+            var height = Math.Abs(_tempWire.Y2 - _tempWire.Y1) + margin * 2;
+            AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
 
-        Canvas.Children.Add(_wireOverlay);
+            // Attach a tap gesture recognizer for bringing up the delete button.
+            var tapRecognizer = new TapGestureRecognizer();
+            tapRecognizer.Tapped += (_, _) =>
+            {
+                Debug.WriteLine("Connection hit area tapped!");
+                OnConnectionTapped(newConnection);
+            };
+            hitArea.GestureRecognizers.Add(tapRecognizer);
+
+            // Add the hit area (and the connection line already exists) to the Canvas.
+            Canvas.Children.Add(hitArea);
+
+            newConnection.HitArea = hitArea;
+            _connections.Add(newConnection);
+
+            // Add connection to xml
+            vm.ConnectCards(_wireSrcId, tgtId, portIndex);
+            return true;
+        }
+
+        return false;
     }
 
     private void OnWireOverlayPan(object? sender, PanUpdatedEventArgs e)
     {
-        var xmlService = new XmlStateService(_statePath);
+        if (!_isDrawingWire || _tempWire == null) return;
 
-        if (!_isDrawingWire) return;
-
-        if (e.StatusType == GestureStatus.Running)
+        switch (e.StatusType)
         {
-            // move the dot + update line
-            var cx = _wireStartX + e.TotalX;
-            var cy = _wireStartY + e.TotalY;
+            case GestureStatus.Running:
+                var cx = _wireStartX + e.TotalX;
+                var cy = _wireStartY + e.TotalY;
 
-            AbsoluteLayout.SetLayoutBounds(_tempDot,
-                new Rect(cx - 6, cy - 6, 12, 12));
+                AbsoluteLayout.SetLayoutBounds(_tempDot, new Rect(cx - 6, cy - 6, 12, 12));
 
-            if (_tempWire == null) return;
-            _tempWire.X2 = cx;
-            _tempWire.Y2 = cy;
+                _tempWire.X2 = cx;
+                _tempWire.Y2 = cy;
+                break;
+
+            case GestureStatus.Canceled:
+            case GestureStatus.Completed:
+                var dotBounds = AbsoluteLayout.GetLayoutBounds(_tempDot);
+                var dropX = dotBounds.X + dotBounds.Width / 2;
+                var dropY = dotBounds.Y + dotBounds.Height / 2;
+
+                bool connected = TrySnapConnection(dropX, dropY);
+
+                ExitDrawingMode(connected);
+                break;
         }
-        else if (e.StatusType == GestureStatus.Completed
-                 || e.StatusType == GestureStatus.Canceled)
+    }
+
+    private void ExitDrawingMode(bool connected)
+    {
+        if (_isDrawingWire)
         {
-            // 1) Compute final drop point in canvas coords
-            // Temp change
-            // var dropX = _wireStartX + e.TotalX;
-            // var dropY = _wireStartY + e.TotalY;
-            var dotBounds = AbsoluteLayout.GetLayoutBounds(_tempDot);
-            var dropX = dotBounds.X + dotBounds.Width / 2;
-            var dropY = dotBounds.Y + dotBounds.Height / 2;
-
-            const double snapRadius = 25; // px threshold for “over” a port
-            var connected = false;
-
-            // 2) Hit-test every card’s two input ports
-            foreach (var kvp in _cardMap)
-            {
-                var tgtId = kvp.Key;
-                var cv = kvp.Value;
-                var b = AbsoluteLayout.GetLayoutBounds(cv);
-
-                // Input‐1 center (left, upper quarter)
-                var in1 = new Point(b.X, b.Y + b.Height * 0.25);
-                // Input‐2 center (left, lower quarter)
-                var in2 = new Point(b.X, b.Y + b.Height * 0.75);
-
-                // --- For Input Port 1 ---
-                if (Distance(dropX, dropY, in1.X, in1.Y) < snapRadius)
-                {
-                    // Check if input port 1 is available.
-                    if (!_connections.Any(c => c.TargetCardId == tgtId && c.TargetInputIndex == 1))
-                    {
-                        // Snap the temporary wire to the input point.
-                        if (_tempWire == null) return;
-                        _tempWire.X2 = in1.X;
-                        _tempWire.Y2 = in1.Y;
-
-                        // Create a new connection using _tempWire.
-                        var newConnection = new Connection
-                        {
-                            SourceCardId = _wireSrcId,
-                            TargetCardId = tgtId,
-                            TargetInputIndex = 1,
-                            LineShape = _tempWire
-                        };
-
-                        // Now create and add the invisible hit area.
-                        var hitArea = new ContentView
-                        {
-                            BackgroundColor =
-                                Colors.Transparent, // set to a visible color (e.g. Colors.Black) for debugging
-                            InputTransparent = false // ensure it can receive touch input
-                        };
-
-                        // Calculate the bounding box for the hit area with extra margin for easier tapping.
-                        double margin = 10;
-                        var minX = Math.Min(_tempWire.X1, _tempWire.X2) - margin;
-                        var minY = Math.Min(_tempWire.Y1, _tempWire.Y2) - margin;
-                        var width = Math.Abs(_tempWire.X2 - _tempWire.X1) + margin * 2;
-                        var height = Math.Abs(_tempWire.Y2 - _tempWire.Y1) + margin * 2;
-                        AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-                        // Attach a tap gesture recognizer for bringing up the delete button.
-                        var tapRecognizer = new TapGestureRecognizer();
-                        tapRecognizer.Tapped += (_,_) =>
-                        {
-                            Debug.WriteLine("Connection hit area tapped!");
-                            OnConnectionTapped(newConnection);
-                        };
-                        hitArea.GestureRecognizers.Add(tapRecognizer);
-
-                        // Add the hit area (and the connection line already exists) to the Canvas.
-                        Canvas.Children.Add(hitArea);
-
-                        newConnection.HitArea = hitArea;
-                        _connections.Add(newConnection);
-
-                        connected = true;
-
-                        // Add connection to xml
-                        xmlService.UpdateCardInput(tgtId, 1, _wireSrcId);
-                        break;
-                    }
-
-                    Canvas.Children.Remove(_tempWire);
-                    connected = true;
-                    break;
-                }
-
-                // --- For Input Port 2 ---
-                if (Distance(dropX, dropY, in2.X, in2.Y) < snapRadius)
-                {
-                    if (!_connections.Any(c => c.TargetCardId == tgtId && c.TargetInputIndex == 2))
-                    {
-                        if (_tempWire == null) return;
-                        _tempWire.X2 = in2.X;
-                        _tempWire.Y2 = in2.Y;
-                        var newConnection = new Connection
-                        {
-                            SourceCardId = _wireSrcId,
-                            TargetCardId = tgtId,
-                            TargetInputIndex = 2,
-                            LineShape = _tempWire
-                        };
-
-                        var hitArea = new ContentView
-                        {
-                            BackgroundColor = Colors.Transparent, // Use a bright color for testing if needed
-                            InputTransparent = false
-                        };
-                        double margin = 10;
-                        var minX = Math.Min(_tempWire.X1, _tempWire.X2) - margin;
-                        var minY = Math.Min(_tempWire.Y1, _tempWire.Y2) - margin;
-                        var width = Math.Abs(_tempWire.X2 - _tempWire.X1) + margin * 2;
-                        var height = Math.Abs(_tempWire.Y2 - _tempWire.Y1) + margin * 2;
-                        AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-                        var tapRecognizer = new TapGestureRecognizer();
-                        tapRecognizer.Tapped += (_,_) =>
-                        {
-                            Debug.WriteLine("Connection hit area tapped!");
-                            OnConnectionTapped(newConnection);
-                        };
-                        hitArea.GestureRecognizers.Add(tapRecognizer);
-                        Canvas.Children.Add(hitArea);
-
-                        newConnection.HitArea = hitArea;
-                        _connections.Add(newConnection);
-
-                        connected = true;
-
-                        // Add connection to xml
-                        xmlService.UpdateCardInput(tgtId, 2, _wireSrcId);
-                        break;
-                    }
-
-                    Canvas.Children.Remove(_tempWire);
-                    connected = true;
-                    break;
-                }
-            }
-
-            // 3) If we never connected, remove the temp wire
             if (!connected)
                 Canvas.Children.Remove(_tempWire);
-
-            // 4) Tear down the dot and overlay in either case
             Canvas.Children.Remove(_tempDot);
             Canvas.Children.Remove(_wireOverlay);
 
@@ -506,21 +462,11 @@ public partial class PuzzlePage : ContentPage
         }
     }
 
-    // ── Finish wiring on input tap ─────────────────────────────────────
-
-    private static int GetCardId(IOutputProvider? p)
-    {
-        return p switch
-        {
-            LogicGateCard lg => lg.Id,
-            IOCard io => io.Id,
-            _ => 0
-        };
-    }
-
     private async void OnConnectionTapped(Connection connection)
     {
         var line = connection.LineShape;
+
+        if (line == null) return;
 
         // Calculate the centre point of the line.
         var centerX = (line.X1 + line.X2) / 2;
@@ -540,7 +486,7 @@ public partial class PuzzlePage : ContentPage
             CornerRadius = 15 // Circular button.
         };
 
-        deleteButton.Clicked += (_,_) =>
+        deleteButton.Clicked += (_, _) =>
         {
             // Remove connection's visual elements.
             if (Canvas.Children.Contains(connection.LineShape))
@@ -559,7 +505,7 @@ public partial class PuzzlePage : ContentPage
         AbsoluteLayout.SetLayoutBounds(deleteButton, new Rect(centerX - 15, centerY - 15, 30, 30));
         Canvas.Children.Add(deleteButton);
 
-        deleteButton.Clicked += (_,_) =>
+        deleteButton.Clicked += (_, _) =>
         {
             if (Canvas.Children.Contains(connection.LineShape))
                 Canvas.Children.Remove(connection.LineShape);
@@ -577,58 +523,34 @@ public partial class PuzzlePage : ContentPage
         if (Canvas.Children.Contains(deleteButton)) Canvas.Children.Remove(deleteButton);
     }
 
-    // ── Redraw permanent wires ─────────────────────────────────────────
-
-    private void CreateConnection(int fromId, int toId, int inputIndex)
+    private Point GetOutputPortPosition(CardView cv)
     {
-        var line = new Line
-        {
-            Stroke = new SolidColorBrush(Colors.White),
-            StrokeThickness = 2
-        };
-        line.InputTransparent = true;
-        Canvas.Children.Add(line);
+        var b = AbsoluteLayout.GetLayoutBounds(cv);
+        return new Point(b.X + b.Width, b.Y + b.Height / 2);
+    }
 
-        var conn = new Connection
-        {
-            SourceCardId = fromId,
-            TargetCardId = toId,
-            TargetInputIndex = inputIndex,
-            LineShape = line
-        };
-        _connections.Add(conn);
-        UpdateConnectionLine(conn);
+    private Point GetInputPortPosition(CardView cv, int inputIndex)
+    {
+        var b = AbsoluteLayout.GetLayoutBounds(cv);
+        double offsetY = inputIndex == 1 ? 0.25 : 0.75;
+        return new Point(b.X, b.Y + b.Height * offsetY);
     }
 
     private void UpdateConnectionLine(Connection c)
     {
-        var s = _cardMap[c.SourceCardId];
-        var d = _cardMap[c.TargetCardId];
-        var sb = AbsoluteLayout.GetLayoutBounds(s);
-        var db = AbsoluteLayout.GetLayoutBounds(d);
+        if (!_cardMap.TryGetValue(c.SourceCardId, out var source) ||
+            !_cardMap.TryGetValue(c.TargetCardId, out var target) ||
+            c.LineShape == null)
+            return;
 
-        c.LineShape.X1 = sb.X + sb.Width;
-        c.LineShape.Y1 = sb.Y + sb.Height / 2;
-        c.LineShape.X2 = db.X;
-        c.LineShape.Y2 = db.Y + db.Height * (c.TargetInputIndex == 1 ? 0.25 : 0.75);
+        var start = GetOutputPortPosition(source);
+        var end = GetInputPortPosition(target, c.TargetInputIndex);
+
+        c.LineShape.X1 = start.X;
+        c.LineShape.Y1 = start.Y;
+        c.LineShape.X2 = end.X;
+        c.LineShape.Y2 = end.Y;
     }
-
-    // ── PlaceCard helper ─────────────────────────────────────────────
-
-    private void PlaceCard(int id, string type, double x, double y)
-    {
-        var vm = new CardViewModel(id, type);
-        var cv = new CardView { BindingContext = vm };
-        AbsoluteLayout.SetLayoutBounds(cv, new Rect(x, y, 120, 80));
-        Canvas.Children.Add(cv);
-
-        cv.PositionChanged += OnCardMoved;
-        cv.OutputPortTapped += OnOutTapped;
-
-        _cardMap[id] = cv;
-    }
-
-    // ── Resize the canvas ────────────────────────────────────────────
 
     private void UpdateCanvasSize()
     {
@@ -642,461 +564,77 @@ public partial class PuzzlePage : ContentPage
         Canvas.HeightRequest = Math.Max(bottom + pad, VerticalScroll.Height);
     }
 
-    private double Distance(double x1, double y1, double x2, double y2)
-    {
-        return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-    }
-
-    public void ReshuffleIds()
-    {
-        // 1. Gather all card info from the XML.
-        var cards = new List<CardInfo>();
-
-        var xmlService = new XmlStateService(_statePath);
-
-        var doc = xmlService.Document;
-
-        // Assume _doc is your XML document that holds the state.
-        // Input cards (have no dependency)
-        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            cards.Add(new CardInfo { OldId = oldId, Type = "Input" });
-        }
-
-        // Logic gate cards (depend on two inputs possibly).
-        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            var info = new CardInfo { OldId = oldId, Type = "LogicGate" };
-
-            // For each input attribute, add dependency if value is nonzero.
-            var input1 = (int)elem.Attribute("input1");
-            var input2 = (int)elem.Attribute("input2");
-            if (input1 != 0)
-                info.Dependencies.Add(input1);
-            if (input2 != 0)
-                info.Dependencies.Add(input2);
-
-            cards.Add(info);
-        }
-
-        // Output cards (depend on one input).
-        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            var info = new CardInfo { OldId = oldId, Type = "Output" };
-            var input1 = (int)elem.Attribute("input1");
-            if (input1 != 0)
-                info.Dependencies.Add(input1);
-            cards.Add(info);
-        }
-
-        // Compute in-degrees for each card.
-        var inDegree = new Dictionary<int, int>();
-        foreach (var card in cards) inDegree[card.OldId] = 0;
-        foreach (var card in cards)
-        foreach (var _ in card.Dependencies)
-            // Increase in-degree for the card that depends on something.
-            // (Here, each card's dependency is not about being depended upon; rather, the card
-            // itself should have an in-degree corresponding to its number of dependencies.)
-            inDegree[card.OldId]++;
-
-        // Start with cards that have zero in-degree.
-        var ready = new Queue<CardInfo>(cards.Where(c => inDegree[c.OldId] == 0));
-        var sorted = new List<CardInfo>();
-
-        while (ready.Count > 0)
-        {
-            var card = ready.Dequeue();
-            sorted.Add(card);
-
-            // For every card in the overall list that depends on this card,
-            // decrement its in-degree.
-            foreach (var dependent in cards.Where(c => c.Dependencies.Contains(card.OldId)))
-            {
-                inDegree[dependent.OldId]--;
-                if (inDegree[dependent.OldId] == 0)
-                    ready.Enqueue(dependent);
-            }
-        }
-
-        // If there is a cycle, sorted.Count will not equal cards.Count
-        if (sorted.Count != cards.Count)
-        {
-            DisplayAlert("A dependency cycle was detected among the cards. Reshuffling is not possible.", "Please fix your card arrangement.", "OK");
-            return;
-        }
-
-        // 3. Assign new IDs in the sorted order.
-        var newId = 1;
-        var idMapping = new Dictionary<int, int>(); // mapping old -> new
-        foreach (var card in sorted)
-        {
-            card.NewId = newId;
-            idMapping[card.OldId] = newId;
-            newId++;
-        }
-
-        // 4. Update the XML: 
-        // Update input cards
-        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            if (idMapping.ContainsKey(oldId)) elem.SetAttributeValue("id", idMapping[oldId]);
-        }
-
-        // Update logic gate cards (update id, input1, input2)
-        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            if (idMapping.ContainsKey(oldId))
-            {
-                elem.SetAttributeValue("id", idMapping[oldId]);
-
-                var input1 = (int)elem.Attribute("input1");
-                var input2 = (int)elem.Attribute("input2");
-                if (input1 != 0 && idMapping.ContainsKey(input1))
-                    elem.SetAttributeValue("input1", idMapping[input1]);
-                if (input2 != 0 && idMapping.ContainsKey(input2))
-                    elem.SetAttributeValue("input2", idMapping[input2]);
-            }
-        }
-
-        // Update output cards (update id and input1)
-        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
-        {
-            var oldId = (int)elem.Attribute("id");
-            if (idMapping.ContainsKey(oldId))
-            {
-                elem.SetAttributeValue("id", idMapping[oldId]);
-                var input1 = (int)elem.Attribute("input1");
-                if (input1 != 0 && idMapping.ContainsKey(input1))
-                    elem.SetAttributeValue("input1", idMapping[input1]);
-            }
-        }
-
-        // Save the updated XML
-        xmlService.Save();
-
-        // 5. Update the in‑memory CardView objects on your canvas.
-        // Here we update each CardView's BindingContext (a CardViewModel).
-        foreach (var cardView in _cardMap.Values)
-            if (cardView.BindingContext is CardViewModel vm)
-                if (idMapping.ContainsKey(vm.Id))
-                    vm.Id = idMapping[vm.Id];
-
-
-        var newCardMap = new Dictionary<int, CardView>();
-        foreach (var card in _cardMap.Values)
-            if (card.BindingContext is CardViewModel vm)
-                newCardMap[vm.Id] = card;
-
-        _cardMap = newCardMap;
-        
-        foreach (var connection in _connections)
-        {
-            if (idMapping.ContainsKey(connection.SourceCardId))
-                connection.SourceCardId = idMapping[connection.SourceCardId];
-            
-            if (idMapping.ContainsKey(connection.TargetCardId))
-                connection.TargetCardId = idMapping[connection.TargetCardId];
-        }
-
-        xmlService.PrintStateFile();
-    }
-
-
     private void LoadInitialCanvas()
     {
-        var xmlService = new XmlStateService(_statePath);
+        Canvas.Children.Clear();
+        _cardMap.Clear();
+        _connections.Clear();
 
-        var doc = xmlService.Document;
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
 
-        foreach (var elem in doc.Descendants("InputCards").Elements("ICard"))
+        // Load and render all cards
+        var cards = vm.LoadCards();
+        foreach (var card in cards)
         {
-            var cardId = (int)elem.Attribute("id");
-            var gateType = "Input";
-            var xPos = (double)elem.Attribute("xPos");
-            var yPos = (double)elem.Attribute("yPos");
-
-            var vm = new CardViewModel(cardId, gateType);
-
-            vm.X = xPos;
-            vm.Y = yPos;
-
-            var cv = new CardView { BindingContext = vm };
-            cv.DeleteRequested += Card_DeleteRequested;
-            cv.PositionChanged += OnCardMoved;
-            cv.OutputPortTapped += OnOutTapped;
-
-            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-            Canvas.Children.Add(cv);
-
-            _cardMap[cardId] = cv;
-            UpdateCanvasSize();
+            CreateCardView(
+                id: card.Id,
+                type: card.GateType,
+                x: card.X,
+                y: card.Y,
+                enableOutputTap: card.GateType != GateTypeEnum.Output
+            );
         }
 
-        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
+        // Load and draw all connections
+        var conns = vm.LoadConnections();
+        foreach (var conn in conns)
         {
-            var cardId = (int)elem.Attribute("id");
-            var gateType = "Output";
-            var xPos = (double)elem.Attribute("xPos");
-            var yPos = (double)elem.Attribute("yPos");
-
-            var vm = new CardViewModel(cardId, gateType);
-
-            vm.X = xPos;
-            vm.Y = yPos;
-
-            var cv = new CardView { BindingContext = vm };
-            cv.DeleteRequested += Card_DeleteRequested;
-            cv.PositionChanged += OnCardMoved;
-
-            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-            Canvas.Children.Add(cv);
-
-            _cardMap[cardId] = cv;
-            UpdateCanvasSize();
+            RestoreConnection(conn.FromId, conn.ToId, conn.TargetInputIndex);
         }
 
-        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
-        {
-            var cardID = (int)elem.Attribute("id");
-            var gateType = (string)elem.Attribute("gateType");
-            var xPos = (double)elem.Attribute("xPos");
-            var yPos = (double)elem.Attribute("yPos");
-
-            var vm = new CardViewModel(cardID, gateType);
-
-            vm.X = xPos;
-            vm.Y = yPos;
-
-            var cv = new CardView { BindingContext = vm };
-
-            cv.DeleteRequested += Card_DeleteRequested;
-            cv.PositionChanged += OnCardMoved;
-            cv.OutputPortTapped += OnOutTapped;
-
-            AbsoluteLayout.SetLayoutBounds(cv, new Rect(vm.X, vm.Y, 120, 80));
-            Canvas.Children.Add(cv);
-
-            _cardMap[cardID] = cv;
-            UpdateCanvasSize();
-        }
-
-        // Rebuild connections
-        foreach (var elem in doc.Descendants("OutputCards").Elements("OCard"))
-        {
-            var cardId = (int)elem.Attribute("id");
-            var sourceId = (int)elem.Attribute("input1"); // For outputs, input1 is the connected source
-
-            // get the cardviews
-
-            var targetCv = _cardMap[cardId];
-            var sourceCv = _cardMap[sourceId];
-
-            var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
-            var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-            var wireStartX = sourceBounds.X + sourceBounds.Width;
-            var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-            var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
-
-            var connectionWire = new Line
-            {
-                Stroke = new SolidColorBrush(Colors.White),
-                StrokeThickness = 2,
-                X1 = wireStartX, Y1 = wireStartY,
-                X2 = in1Point.X, Y2 = in1Point.Y
-            };
-
-            if (sourceId != 0)
-            {
-                var newConnection = new Connection
-                {
-                    SourceCardId = sourceId,
-                    TargetCardId = cardId,
-                    TargetInputIndex = 1,
-                    LineShape = connectionWire
-                };
-
-                var hitArea = new ContentView
-                {
-                    BackgroundColor = Colors.Transparent,
-                    InputTransparent = false
-                };
-
-                // Calculate the bounding box for the hit area with extra margin for easier tapping.
-                double margin = 10;
-                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-                // Attach a tap gesture recognizer for bringing up the delete button.
-                var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (_,_) =>
-                {
-                    Debug.WriteLine("Connection hit area tapped!");
-                    OnConnectionTapped(newConnection);
-                };
-                hitArea.GestureRecognizers.Add(tapRecognizer);
-
-                connectionWire.InputTransparent = true; 
-                Canvas.Children.Add(connectionWire);
-
-                Canvas.Children.Add(hitArea);
-
-                newConnection.HitArea = hitArea;
-                _connections.Add(newConnection);
-            }
-        }
-
-        // Rebuild connections for LogicGateCards (can have input1 and/or input2)
-        foreach (var elem in doc.Descendants("LogicGateCards").Elements("LogicGate"))
-        {
-            var cardId = (int)elem.Attribute("id");
-            var input1SourceId = (int)elem.Attribute("input1");
-            var input2SourceId = (int)elem.Attribute("input2");
-
-            // Get the target card view from the map.
-            var targetCv = _cardMap[cardId];
-            var targetBounds = AbsoluteLayout.GetLayoutBounds(targetCv);
-
-            // Process connection for input1, if connected.
-            if (input1SourceId != 0)
-            {
-                // Get source card view from the map.
-                var sourceCv = _cardMap[input1SourceId];
-                var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-                // Setup the starting point at the right side of the source card.
-                var wireStartX = sourceBounds.X + sourceBounds.Width;
-                var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-                // For input1, assume the target connection point is at 25% down from the top.
-                var in1Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.25);
-
-                // Create the connection line.
-                var connectionWire = new Line
-                {
-                    Stroke = new SolidColorBrush(Colors.White),
-                    StrokeThickness = 2,
-                    X1 = wireStartX, Y1 = wireStartY,
-                    X2 = in1Point.X, Y2 = in1Point.Y
-                };
-
-                // Create the connection object.
-                var newConnection = new Connection
-                {
-                    SourceCardId = input1SourceId,
-                    TargetCardId = cardId,
-                    TargetInputIndex = 1,
-                    LineShape = connectionWire
-                };
-
-                // Build a transparent hit area around the connection line.
-                var hitArea = new ContentView
-                {
-                    BackgroundColor = Colors.Transparent,
-                    InputTransparent = false
-                };
-
-                double margin = 10;
-                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-                // Add a tap recognizer to let the user delete the connection.
-                var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (_, _) =>
-                {
-                    Debug.WriteLine("Connection hit area tapped!");
-                    OnConnectionTapped(newConnection);
-                };
-                hitArea.GestureRecognizers.Add(tapRecognizer);
-
-                // Add the visuals to the canvas.
-                connectionWire.InputTransparent = true; 
-                Canvas.Children.Add(connectionWire);
-                Canvas.Children.Add(hitArea);
-
-                // Save hit area reference and track the connection.
-                newConnection.HitArea = hitArea;
-                _connections.Add(newConnection);
-            }
-
-            // Process connection for input2, if connected.
-            if (input2SourceId != 0)
-            {
-                // Get the source card view.
-                var sourceCv = _cardMap[input2SourceId];
-                var sourceBounds = AbsoluteLayout.GetLayoutBounds(sourceCv);
-
-                var wireStartX = sourceBounds.X + sourceBounds.Width;
-                var wireStartY = sourceBounds.Y + sourceBounds.Height / 2;
-
-                // For input2, assume the target connection point is at 75% down from the top.
-                var in2Point = new Point(targetBounds.X, targetBounds.Y + targetBounds.Height * 0.75);
-
-                var connectionWire = new Line
-                {
-                    Stroke = new SolidColorBrush(Colors.White),
-                    StrokeThickness = 2,
-                    X1 = wireStartX, Y1 = wireStartY,
-                    X2 = in2Point.X, Y2 = in2Point.Y
-                };
-
-                var newConnection = new Connection
-                {
-                    SourceCardId = input2SourceId,
-                    TargetCardId = cardId,
-                    TargetInputIndex = 2,
-                    LineShape = connectionWire
-                };
-
-                var hitArea = new ContentView
-                {
-                    BackgroundColor = Colors.Transparent,
-                    InputTransparent = false
-                };
-
-                double margin = 10;
-                var minX = Math.Min(connectionWire.X1, connectionWire.X2) - margin;
-                var minY = Math.Min(connectionWire.Y1, connectionWire.Y2) - margin;
-                var width = Math.Abs(connectionWire.X2 - connectionWire.X1) + margin * 2;
-                var height = Math.Abs(connectionWire.Y2 - connectionWire.Y1) + margin * 2;
-                AbsoluteLayout.SetLayoutBounds(hitArea, new Rect(minX, minY, width, height));
-
-                var tapRecognizer = new TapGestureRecognizer();
-                tapRecognizer.Tapped += (_,_) =>
-                {
-                    Debug.WriteLine("Connection hit area tapped!");
-                    OnConnectionTapped(newConnection);
-                };
-                hitArea.GestureRecognizers.Add(tapRecognizer);
-
-                connectionWire.InputTransparent = true;
-                Canvas.Children.Add(connectionWire);
-                Canvas.Children.Add(hitArea);
-
-                newConnection.HitArea = hitArea;
-                _connections.Add(newConnection);
-            }
-        }
+        UpdateCanvasSize();
     }
 
-    // Helper class to store card info for topological sorting.
-    private class CardInfo
+    private void BeginWireDrawing(int sourceId, Point startPoint)
     {
-        public int OldId { get; set; }
-        public int NewId { get; set; }
-        public required string Type { get; set; } // "Input", "LogicGate", "Output"
-        public List<int> Dependencies { get; } = new(); // older IDs of cards this one depends on.
+        _wireSrcId = sourceId;
+        _wireStartX = startPoint.X;
+        _wireStartY = startPoint.Y;
+
+        _tempWire = new Line
+        {
+            Stroke = new SolidColorBrush(Colors.White),
+            StrokeThickness = 2,
+            X1 = startPoint.X, Y1 = startPoint.Y,
+            X2 = startPoint.X, Y2 = startPoint.Y,
+            InputTransparent = true
+        };
+        Canvas.Children.Add(_tempWire);
+
+        _tempDot = new BoxView
+        {
+            WidthRequest = 12,
+            HeightRequest = 12,
+            CornerRadius = 6,
+            BackgroundColor = Colors.White
+        };
+        AbsoluteLayout.SetLayoutBounds(_tempDot,
+            new Rect(startPoint.X - 6, startPoint.Y - 6, 12, 12));
+        Canvas.Children.Add(_tempDot);
+
+        _wireOverlay = new BoxView
+        {
+            BackgroundColor = Colors.Transparent
+        };
+        AbsoluteLayout.SetLayoutFlags(_wireOverlay, AbsoluteLayoutFlags.All);
+        AbsoluteLayout.SetLayoutBounds(_wireOverlay, new Rect(0, 0, 1, 1));
+
+        var pan = new PanGestureRecognizer();
+        pan.PanUpdated += OnWireOverlayPan;
+        _wireOverlay.GestureRecognizers.Add(pan);
+        Canvas.Children.Add(_wireOverlay);
+
+        _isDrawingWire = true;
     }
 }

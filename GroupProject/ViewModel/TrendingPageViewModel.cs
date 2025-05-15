@@ -3,11 +3,11 @@ using System.Windows.Input;
 using GroupProject.Models;
 using Microsoft.Data.SqlClient;
 
-namespace GroupProject.ViewModels
+namespace GroupProject.ViewModel
 {
     public class TrendingPageViewModel : BindableObject
     {
-        private const string connectionString = "Server=tcp:bs3206server.database.windows.net,1433;Initial Catalog=BS3206;Persist Security Info=False;User ID=sqladmin;Password=BS3206!!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        private const string ConnectionString = "Server=tcp:bs3206server.database.windows.net,1433;Initial Catalog=BS3206;Persist Security Info=False;User ID=sqladmin;Password=BS3206!!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
         public ObservableCollection<Puzzle> Puzzles { get; } = new();
 
@@ -25,7 +25,7 @@ namespace GroupProject.ViewModels
             {
                 Puzzles.Clear();
 
-                using var conn = new SqlConnection(connectionString);
+                using var conn = new SqlConnection(ConnectionString);
                 string query = @"
                     SELECT TOP 10 Id, UserId, PuzzleName, PuzzleData, CreatedAt, Views
                     FROM Puzzles
