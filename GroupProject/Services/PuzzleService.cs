@@ -5,14 +5,15 @@ namespace GroupProject.Services
 {
     public static class PuzzleService
     {
-        private static readonly string connectionString = "Server=tcp:bs3206server.database.windows.net,1433;Initial Catalog=BS3206;Persist Security Info=False;User ID=sqladmin;Password=BS3206!!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        private static readonly string ConnectionString =
+            "Server=tcp:bs3206server.database.windows.net,1433;Initial Catalog=BS3206;Persist Security Info=False;User ID=sqladmin;Password=BS3206!!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
         public static async Task SavePuzzleAsync(int userId, string puzzleName)
         {
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
             string xmlContent = await File.ReadAllTextAsync(filePath);
 
-            using var conn = new SqlConnection(connectionString);
+            using var conn = new SqlConnection(ConnectionString);
 
             string query = @"
                 INSERT INTO Puzzles (UserId, PuzzleName, PuzzleData)
@@ -37,7 +38,7 @@ namespace GroupProject.Services
         public static async Task LoadPuzzleAsync(int puzzleId)
         {
             string destinationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
-            using var conn = new SqlConnection(connectionString);
+            using var conn = new SqlConnection(ConnectionString);
 
             string selectQuery = "SELECT PuzzleData FROM Puzzles WHERE Id = @PuzzleId";
             string updateViewsQuery = "UPDATE Puzzles SET Views = Views + 1 WHERE Id = @PuzzleId";
@@ -73,7 +74,7 @@ namespace GroupProject.Services
 
         public static async Task DeletePuzzleAsync(int puzzleId)
         {
-            using var conn = new SqlConnection(connectionString);
+            using var conn = new SqlConnection(ConnectionString);
 
             string query = "DELETE FROM Puzzles WHERE Id = @PuzzleId";
 
@@ -95,7 +96,7 @@ namespace GroupProject.Services
         {
             var puzzles = new List<Puzzle>();
 
-            using var conn = new SqlConnection(connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             string query = "SELECT Id, PuzzleName, PuzzleData, CreatedAt FROM Puzzles WHERE UserId = @UserId";
 
             var cmd = new SqlCommand(query, conn);
@@ -124,6 +125,5 @@ namespace GroupProject.Services
 
             return puzzles;
         }
-
     }
 }

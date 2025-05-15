@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace GroupProject.ViewModels
+namespace GroupProject.ViewModel
 {
     public class DashboardViewModel
     {

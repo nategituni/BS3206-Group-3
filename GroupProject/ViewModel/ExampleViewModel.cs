@@ -1,1 +1,0 @@
-// Handles user interactions and updates the view accordingly
