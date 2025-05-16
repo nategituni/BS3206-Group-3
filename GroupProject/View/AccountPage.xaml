@@ -53,6 +53,11 @@
                     <DataTemplate>
                         <HorizontalStackLayout Spacing="10">
                             <Label Text="{Binding PuzzleName}" VerticalOptions="Center" />
+
+                            <Button Text="Load"
+                                    Command="{Binding BindingContext.LoadPuzzleCommand, Source={x:Reference AccountRoot}}"
+                                    CommandParameter="{Binding .}" />
+
                             <Button Text="Delete"
                                     Command="{Binding BindingContext.DeletePuzzleCommand, Source={x:Reference AccountRoot}}"
                                     CommandParameter="{Binding .}" />

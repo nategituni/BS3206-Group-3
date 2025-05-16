@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using GroupProject.Models;
+using GroupProject.Services;
 using Microsoft.Data.SqlClient;
 
 namespace GroupProject.ViewModel
@@ -12,10 +13,13 @@ namespace GroupProject.ViewModel
         public ObservableCollection<Puzzle> Puzzles { get; } = new();
 
         public ICommand RefreshCommand { get; }
+        public ICommand LoadPuzzleCommand { get; }
 
         public TrendingPageViewModel()
         {
             RefreshCommand = new Command(async () => await LoadTrendingPuzzlesAsync());
+            LoadPuzzleCommand = new Command<Puzzle>(async (puzzle) => await LoadPuzzleAsync(puzzle));
+
             LoadTrendingPuzzlesAsync().ConfigureAwait(false);
         }
 
@@ -55,6 +59,21 @@ namespace GroupProject.ViewModel
             catch (Exception ex)
             {
                 Console.WriteLine("SQL ERROR (LoadTrendingPuzzles): " + ex.Message);
+            }
+        }
+
+        private async Task LoadPuzzleAsync(Puzzle puzzle)
+        {
+            if (puzzle == null) return;
+
+            try
+            {
+                await PuzzleService.LoadPuzzleAsync(puzzle.Id);
+                await Shell.Current.GoToAsync("///PuzzlePage");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading puzzle: {ex.Message}");
             }
         }
     }

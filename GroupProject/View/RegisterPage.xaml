@@ -4,21 +4,36 @@
              x:Class="GroupProject.View.RegisterPage" >
 
     <VerticalStackLayout Padding="20" Spacing="15">
-		<Entry Placeholder="Full Name" Text="{Binding FullName}" />
-		<Entry Placeholder="Email" Text="{Binding Email}" />
-		<Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
-		<Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
 
-		<Label Text="{Binding StatusMessage}" TextColor="Red" />
+        <Entry Placeholder="Full Name" Text="{Binding FullName}" />
+        <Entry Placeholder="Email" Text="{Binding Email}" />
+        <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+        <Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
 
-		<Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
+        <!-- Password Requirements -->
+        <Label Text="Password must be at least 7 characters and include:
+- Uppercase letter
+- Lowercase letter
+- Number
+- Symbol (!?@#)"
+               FontSize="12"
+               TextColor="Gray" />
 
-		<!-- MFA Code Entry -->
-		<Entry Placeholder="Enter MFA Code" Text="{Binding MfaCode}" IsVisible="{Binding IsMfaVisible}" />
-		<Button Text="Verify Code" Command="{Binding VerifyMfaCommand}"
+        <!-- Status message -->
+        <Label Text="{Binding StatusMessage}" TextColor="Red" />
+
+        <!-- Register button -->
+        <Button Text="Register" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsRegisterEnabled}" />
+
+        <!-- MFA Code Entry -->
+        <Entry Placeholder="Enter MFA Code" Text="{Binding MfaCode}" IsVisible="{Binding IsMfaVisible}" />
+        <Button Text="Verify Code"
+                Command="{Binding VerifyMfaCommand}"
                 IsEnabled="{Binding IsVerifyMfaEnabled}"
                 IsVisible="{Binding IsMfaVisible}" />
 
-		<Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
-	</VerticalStackLayout>
+        <!-- Back to Login -->
+        <Button Text="Back to Login" Command="{Binding GoToLoginCommand}" />
+
+    </VerticalStackLayout>
 </ContentPage>

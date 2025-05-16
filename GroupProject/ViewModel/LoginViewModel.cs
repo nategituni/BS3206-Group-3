@@ -51,6 +51,13 @@ namespace GroupProject.ViewModel
 
         private async Task LoginAsync()
         {
+
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+            {
+                StatusMessage = "Please enter both email and password.";
+                return;
+            }
+
             bool success = await AuthService.ValidateLoginAsync(Email, Password);
 
             if (success)
