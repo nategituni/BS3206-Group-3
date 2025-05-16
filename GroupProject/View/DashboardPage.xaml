@@ -13,7 +13,7 @@
         <Button Text="Logout" Command="{Binding GoToLogoutCommand}" />
         <Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" />
         <Button Text="Trending Puzzles" Command="{Binding GoToTrendingCommand}" />
-		<Button Text="Learner" Command="{Binding GoToLearnerCommand}" />
+		<Button Text="Learner" Command="{Binding GoToLearnerCommand}" AutomationId="LearnerPageBtn"/>
 
     </VerticalStackLayout>
 
