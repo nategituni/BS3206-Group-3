@@ -13,7 +13,6 @@ namespace GroupProject.ViewModel
     public class AccountViewModel : INotifyPropertyChanged
     {
         private ImageSource _profileImageSource;
-
         public ImageSource ProfileImageSource
         {
             get => _profileImageSource;
@@ -25,7 +24,6 @@ namespace GroupProject.ViewModel
         }
 
         private string _fullName;
-
         public string FullName
         {
             get => _fullName;
@@ -37,7 +35,6 @@ namespace GroupProject.ViewModel
         }
 
         private string _bio;
-
         public string Bio
         {
             get => _bio;
@@ -55,6 +52,7 @@ namespace GroupProject.ViewModel
         public ICommand SaveProfileCommand { get; }
         public ICommand ClosePopupCommand { get; }
         public ICommand DeletePuzzleCommand { get; }
+        public ICommand LoadPuzzleCommand { get; }
 
         public AccountViewModel()
         {
@@ -63,6 +61,7 @@ namespace GroupProject.ViewModel
             SaveProfileCommand = new Command(async () => await SaveProfileAsync());
             ClosePopupCommand = new Command(CloseEditProfilePopup);
             DeletePuzzleCommand = new Command<Puzzle>(async (puzzle) => await DeletePuzzleAsync(puzzle));
+            LoadPuzzleCommand = new Command<Puzzle>(async (puzzle) => await LoadPuzzleAsync(puzzle));
 
             LoadProfileDataAsync();
             LoadPuzzlesAsync();
@@ -177,12 +176,26 @@ namespace GroupProject.ViewModel
         {
             if (puzzle == null) return;
 
-            bool confirm =
-                await Shell.Current.DisplayAlert("Confirm", $"Delete puzzle '{puzzle.PuzzleName}'?", "Yes", "No");
+            bool confirm = await Shell.Current.DisplayAlert("Confirm", $"Delete puzzle '{puzzle.PuzzleName}'?", "Yes", "No");
             if (!confirm) return;
 
             await PuzzleService.DeletePuzzleAsync(puzzle.Id);
             Puzzles.Remove(puzzle);
+        }
+
+        private async Task LoadPuzzleAsync(Puzzle puzzle)
+        {
+            if (puzzle == null) return;
+
+            try
+            {
+                await PuzzleService.LoadPuzzleAsync(puzzle.Id);
+                await Shell.Current.GoToAsync("///PuzzlePage");
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Error", $"Failed to load puzzle: {ex.Message}", "OK");
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
