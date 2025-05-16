@@ -34,12 +34,14 @@
 
                 <Button Text="Login"
                         Command="{Binding LoginCommand}"
+						AutomationId="LoginBtn"
                         BackgroundColor="#4F46E5"
                         TextColor="White"
                         CornerRadius="8"/>
 
                 <Button Text="Register"
                         Command="{Binding GoToRegisterCommand}"
+						AutomationId="RegisterBtn"
                         BackgroundColor="Transparent"
                         TextColor="Black" />
 
