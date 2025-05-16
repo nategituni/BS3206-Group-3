@@ -46,6 +46,7 @@ public partial class LearnerPage : ContentPage
 			Keyboard = Keyboard.Numeric,
 			WidthRequest = 50
 		};
+		inputEntry.AutomationId = "TruthTableInputEntryField";
 
 		var outputLabel = new Label { Text = "Number of Outputs:" };
 		var outputEntry = new Entry
@@ -54,8 +55,10 @@ public partial class LearnerPage : ContentPage
 			Keyboard = Keyboard.Numeric,
 			WidthRequest = 50
 		};
+		outputEntry.AutomationId = "TruthTableOutputEntryField";
 
 		var generateButton = new Button { Text = "Generate Truth Table" };
+		generateButton.AutomationId = "GenerateTruthTableBtn";
 
 
 		generateButton.Clicked += (s, e) =>
@@ -84,26 +87,36 @@ public partial class LearnerPage : ContentPage
 
 		var headerLayout = new StackLayout { Orientation = StackOrientation.Horizontal };
 
+		// Create headers for inputs
 		for (int i = 0; i < numberOfInputs; i++)
 		{
-			headerLayout.Children.Add(new Label
+			var inputHeader = new Label
 			{
 				Text = $"In {i + 1}",
 				FontAttributes = FontAttributes.Bold,
 				WidthRequest = 50,
 				HorizontalTextAlignment = TextAlignment.Center
-			});
+			};
+			// Set a unique Automation ID for each input header
+			inputHeader.AutomationId = $"InputHeader_{i + 1}";
+
+			headerLayout.Children.Add(inputHeader);
 		}
 
+		// Create headers for outputs
 		for (int i = 0; i < numberOfOutputs; i++)
 		{
-			headerLayout.Children.Add(new Label
+			var outputHeader = new Label
 			{
 				Text = $"Out {i + 1}",
 				FontAttributes = FontAttributes.Bold,
 				WidthRequest = 50,
 				HorizontalTextAlignment = TextAlignment.Center
-			});
+			};
+			// Set a unique Automation ID for each output header
+			outputHeader.AutomationId = $"OutputHeader_{i + 1}";
+
+			headerLayout.Children.Add(outputHeader);
 		}
 
 		truthTableLayout.Children.Add(headerLayout); 
@@ -113,24 +126,34 @@ public partial class LearnerPage : ContentPage
 		{
 			var rowLayout = new StackLayout { Orientation = StackOrientation.Horizontal };
 
+			// Generate input entries for this row
 			for (int col = 0; col < numberOfInputs; col++)
 			{
-				rowLayout.Children.Add(new Entry
+				var inputEntry = new Entry
 				{
 					Placeholder = "0 or 1",
 					Keyboard = Keyboard.Numeric,
 					WidthRequest = 50
-				});
+				};
+				// Example AutomationID that includes row and column info
+				inputEntry.AutomationId = $"InputEntry_Row{row}_Col{col}";
+
+				rowLayout.Children.Add(inputEntry);
 			}
 
+			// Generate output entries for this row
 			for (int col = 0; col < numberOfOutputs; col++)
 			{
-				rowLayout.Children.Add(new Entry
+				var outputEntry = new Entry
 				{
 					Placeholder = "0 or 1",
 					Keyboard = Keyboard.Numeric,
 					WidthRequest = 50
-				});
+				};
+				// Example AutomationID that includes row and column info
+				outputEntry.AutomationId = $"OutputEntry_Row{row}_Col{col}";
+
+				rowLayout.Children.Add(outputEntry);
 			}
 
 			truthTableLayout.Children.Add(rowLayout);
