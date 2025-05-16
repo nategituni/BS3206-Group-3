@@ -6,7 +6,7 @@
     <VerticalStackLayout Padding="20" Spacing="15">
         <Entry Placeholder="Email" Text="{Binding Email}" />
         <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
-        <Button Text="Login" Command="{Binding LoginCommand}" />
+        <Button Text="Login" Command="{Binding LoginCommand}" AutomationId="LoginBtn" />
         <Button Text="Register" Command="{Binding GoToRegisterCommand}" />
         <Label Text="{Binding StatusMessage}" TextColor="Red" />
     </VerticalStackLayout>

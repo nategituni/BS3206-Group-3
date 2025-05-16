@@ -9,16 +9,19 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem
             Text="Save to Account"
+			AutomationId="SaveToAccount"
             Order="Primary"
             Priority="0"
             Clicked="Save_Clicked" />
 		<ToolbarItem
 			Text="Clear"
+			AutomationId="Clear"
 			Order="Primary"
 			Priority="2"
 			Clicked="Clear_Clicked" />
 		<ToolbarItem
 			Text="Run Learner"
+			AutomationId="RunLearner"
 			Order="Primary"
 			Priority="3"
 			Clicked="Learn_Clicked" />

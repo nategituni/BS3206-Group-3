@@ -9,36 +9,43 @@
 
     <ShellContent
         Title="Login"
+		AutomationId="LoginShellButton"
         ContentTemplate="{DataTemplate local:LoginPage}"
         Route="LoginPage" />
 
     <ShellContent
         Title="Register"
+		AutomationId="RegisterShellButton"
         ContentTemplate="{DataTemplate local:RegisterPage}"
         Route="RegisterPage" />
 
     <ShellContent
         Title="Dashboard"
+		AutomationId="DashboardShellButton"
         ContentTemplate="{DataTemplate local:DashboardPage}"
         Route="DashboardPage" />
 
     <ShellContent
         Title="Account"
+		AutomationId="AccountShellButton"
         ContentTemplate="{DataTemplate local:AccountPage}"
         Route="AccountPage" />
 
     <ShellContent
         Title="Sandbox"
+		AutomationId="SandboxShellButton"
         ContentTemplate="{DataTemplate local:PuzzlePage}"
         Route="PuzzlePage" />
 
 	<ShellContent
 		Title="Learner"
+		AutomationId="LearnerShellButton"
 		ContentTemplate="{DataTemplate local:LearnerPage}"
 		Route="LearnerPage" />
 
     <ShellContent
         Title="Trending"
+		AutomationId="TrendingShellButton"
         ContentTemplate="{DataTemplate local:TrendingPage}"
         Route="TrendingPage" />
 
