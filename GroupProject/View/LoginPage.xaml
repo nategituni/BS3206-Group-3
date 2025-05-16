@@ -26,10 +26,12 @@
                        HorizontalOptions="Center" />
 
                 <Entry Placeholder="Email"
+					   TextColor="Black"
 					   AutomationId="LoginEmailEntryField"
                        Text="{Binding Email}" />
 
                 <Entry Placeholder="Password"
+					   TextColor="Black"
 					   AutomationId="LoginPasswordEntryField"
                        Text="{Binding Password}"
                        IsPassword="True" />
