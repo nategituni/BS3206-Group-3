@@ -1,15 +1,53 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="GroupProject.View.LoginPage" >
+             x:Class="GroupProject.View.LoginPage"
+             NavigationPage.HasNavigationBar="False">
 
-    <VerticalStackLayout Padding="20" Spacing="15">
-        <Entry Placeholder="Email" Text="{Binding Email}" />
-        <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
-        <Button Text="Login" Command="{Binding LoginCommand}" />
-        <Button Text="Register" Command="{Binding GoToRegisterCommand}" />
-        <Label Text="{Binding StatusMessage}" TextColor="Red" />
-    </VerticalStackLayout>
+    <!-- Use ONLY ONE root element -->
+    <Grid>
+        <!-- Background Image -->
+        <Image Source="background.png"
+               Aspect="AspectFill" />
 
+        <!-- Light Grey Login Card -->
+        <Frame VerticalOptions="Center"
+               HorizontalOptions="Center"
+               BackgroundColor="#F5F5F5"
+               CornerRadius="20"
+               Padding="30"
+               WidthRequest="320"
+               HasShadow="True">
+            <VerticalStackLayout Spacing="20">
+                <Label Text="Login"
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       TextColor="Black"
+                       HorizontalOptions="Center" />
+
+                <Entry Placeholder="Email"
+                       Text="{Binding Email}" />
+
+                <Entry Placeholder="Password"
+                       Text="{Binding Password}"
+                       IsPassword="True" />
+
+                <Button Text="Login"
+                        Command="{Binding LoginCommand}"
+                        BackgroundColor="#4F46E5"
+                        TextColor="White"
+                        CornerRadius="8"/>
+
+                <Button Text="Register"
+                        Command="{Binding GoToRegisterCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="Black" />
+
+                <Label Text="{Binding StatusMessage}"
+                       TextColor="Red"
+                       HorizontalOptions="Center"
+                       FontSize="12"/>
+            </VerticalStackLayout>
+        </Frame>
+    </Grid>
 </ContentPage>
-
