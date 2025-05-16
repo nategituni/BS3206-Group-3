@@ -44,4 +44,52 @@ public class LearnerPageUITest : BaseTest
 		// Assert
 		Assert.That(runLearnerButton != null, "Run Learner button not found.");
 	}
+
+	[Test]
+	public void LearnerPageTruthTableEntry()
+	{
+		// Arrange
+		var truthTableEntryInput = FindUIElement("TruthTableInputEntryField");
+		var truthTableEntryOutput = FindUIElement("TruthTableOutputEntryField");
+		var generateTruthTableBtn = FindUIElement("GenerateTruthTableBtn");
+
+		// Act
+		truthTableEntryInput.Click();
+		truthTableEntryInput.SendKeys("1");
+		Thread.Sleep(1000);
+
+		truthTableEntryOutput.Click();
+		truthTableEntryOutput.SendKeys("1");
+		Thread.Sleep(1000);
+
+		// Assert
+		Assert.That(truthTableEntryInput != null, "Truth Table Entry field not found.");
+		Assert.That(truthTableEntryOutput != null, "Truth Table Output field not found.");
+		Assert.That(truthTableEntryInput.Text == "1", "Truth Table Entry field value is incorrect.");
+		Assert.That(truthTableEntryOutput.Text == "1", "Truth Table Output field value is incorrect.");
+		Assert.That(generateTruthTableBtn != null, "Generate Truth Table button not found.");
+
+		// Arrange
+		generateTruthTableBtn.Click();
+		Thread.Sleep(1000);
+
+		var inputHeader = FindUIElement("InputHeader_1");
+		var outputHeader = FindUIElement("OutputHeader_1");
+
+		var inputEntry0x0 = FindUIElement("InputEntry_Row0_Col0");
+		var inputEntry1x0 = FindUIElement("InputEntry_Row1_Col0");
+
+		var outputEntry0x1 = FindUIElement("OutputEntry_Row0_Col0");
+		var outputEntry1x1 = FindUIElement("OutputEntry_Row1_Col0");
+
+		// Assert
+		Assert.That(inputHeader != null, "Input Header not found.");
+		Assert.That(outputHeader != null, "Output Header not found.");
+		Assert.That(inputEntry0x0 != null, "Input Entry (0,0) not found.");
+		Assert.That(inputEntry1x0 != null, "Input Entry (1,0) not found.");
+		Assert.That(outputEntry0x1 != null, "Output Entry (0,1) not found.");
+		Assert.That(outputEntry1x1 != null, "Output Entry (1,1) not found.");
+		Assert.That(inputHeader.Text == "In 1", "Input Header text is incorrect.");
+		Assert.That(outputHeader.Text == "Out 1", "Output Header text is incorrect.");
+	}
 }
