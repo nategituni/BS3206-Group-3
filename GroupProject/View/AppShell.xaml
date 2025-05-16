@@ -32,6 +32,11 @@
         ContentTemplate="{DataTemplate local:PuzzlePage}"
         Route="PuzzlePage" />
 
+	<ShellContent
+		Title="Learner"
+		ContentTemplate="{DataTemplate local:LearnerPage}"
+		Route="LearnerPage" />
+
     <ShellContent
         Title="Trending"
         ContentTemplate="{DataTemplate local:TrendingPage}"

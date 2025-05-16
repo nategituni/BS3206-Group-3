@@ -86,7 +86,7 @@ namespace GroupProject.Tests.Services
             var service = new XmlStateService(tempFile);
 
             service.AddInputCard(10, true, 0, 0);
-            service.UpdateCardPosition(10, 99.99, 88.88);
+            service.SetCardPosition(10, 99.99, 88.88);
 
             var card = service.Document.Descendants("ICard")
                 .FirstOrDefault(x => (int)x.Attribute("id") == 10);
