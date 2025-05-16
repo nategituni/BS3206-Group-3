@@ -634,18 +634,22 @@ public partial class PuzzlePage : ContentPage
         };
 
         deleteButton.Clicked += (_, _) =>
-        {
-            // Remove connection's visual elements.
-            if (Canvas.Children.Contains(connection.LineShape))
-                Canvas.Children.Remove(connection.LineShape);
+		{
+			// Remove connection from XML
+			if (BindingContext is PuzzleViewModel vm)
+				vm.GetXmlStateService().SetCardInput(connection.TargetCardId, connection.TargetInputIndex, 0);
+	
+			// Remove connection's visual elements.
+			if (Canvas.Children.Contains(connection.LineShape))
+				Canvas.Children.Remove(connection.LineShape);
 
-            if (Canvas.Children.Contains(connection.HitArea))
-                Canvas.Children.Remove(connection.HitArea);
+			if (Canvas.Children.Contains(connection.HitArea))
+				Canvas.Children.Remove(connection.HitArea);
 
-            if (Canvas.Children.Contains(deleteButton))
-                Canvas.Children.Remove(deleteButton);
+			if (Canvas.Children.Contains(deleteButton))
+				Canvas.Children.Remove(deleteButton);
 
-            _connections.Remove(connection);
+			_connections.Remove(connection);
         };
 
         // Position the delete button at the center of the line.
