@@ -19,6 +19,7 @@
 			Clicked="Clear_Clicked" />
 		<ToolbarItem
 			Text="Run Learner"
+			AutomationId="RunLearnerBtn"
 			Order="Primary"
 			Priority="3"
 			Clicked="Learn_Clicked" />
