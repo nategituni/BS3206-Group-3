@@ -170,7 +170,7 @@ namespace GroupProject.Model.LogicModel
             ));
 
             // --- Replace MichaelResources in document ---
-            doc.Descendants("MichaelResources").Remove(); // Remove old one, if present
+            doc.Descendants("MichaelResources").Remove(); 
             doc.Root?.Add(michaelResources);
 
             // --- Save XML ---
