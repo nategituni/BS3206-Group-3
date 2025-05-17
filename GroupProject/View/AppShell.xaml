@@ -42,8 +42,8 @@
         ContentTemplate="{DataTemplate local:TrendingPage}"
         Route="TrendingPage" />
 
-    <!-- <ShellContent
-        Title="MichaelsPage"
-        ContentTemplate="{DataTemplate local:MichaelsPage}"
-        Route="MichaelsPage" /> -->
+    <ShellContent
+        Title="Challenges"
+        ContentTemplate="{DataTemplate local:ChallengesPage}"
+        Route="Challenges" />
 </Shell>

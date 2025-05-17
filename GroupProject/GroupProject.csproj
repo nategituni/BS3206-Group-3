@@ -77,4 +77,11 @@
 	  </MauiXaml>
 	</ItemGroup>
 
+	<ItemGroup>
+		<Content Include="Challenges\**\*.xml">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+
 </Project>

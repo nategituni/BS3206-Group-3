@@ -1,0 +1,16 @@
+<Puzzle>
+  <InputCards>
+    <ICard id="1" xPos="100" yPos="100" locked="true" />
+    <ICard id="2" xPos="100" yPos="200" locked="true" />
+  </InputCards>
+  <OutputCards>
+    <OCard id="3" xPos="400" yPos="150" input1="6" locked="true" />
+  </OutputCards>
+  <LogicGateCards>
+    <LogicGate id="6" gateType="And" xPos="250" yPos="150" input1="1" input2="2" />
+  </LogicGateCards>
+  <ChallengeMetadata>
+    <Title>Basic AND Gate</Title>
+    <ExpectedOutput id="3" value="1" />
+  </ChallengeMetadata>
+</Puzzle>

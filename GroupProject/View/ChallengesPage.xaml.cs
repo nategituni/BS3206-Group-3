@@ -2,7 +2,8 @@ using System;
 using GroupProject.ViewModel;
 using Microsoft.Maui.Controls;
 using GroupProject.Model;
-//placeholder
+using GroupProject.Services;
+
 namespace GroupProject.View
 {
     public partial class ChallengesPage : ContentPage
@@ -14,7 +15,7 @@ namespace GroupProject.View
 
         }
 
-        private void OnChallengeSelected(object sender, SelectionChangedEventArgs e)
+        private async void OnChallengeSelected(object sender, SelectionChangedEventArgs e)
         {
             if (e.CurrentSelection.Count == 0)
                 return;
@@ -23,11 +24,23 @@ namespace GroupProject.View
             if (selected == null)
                 return;
 
-            // Example navigation or popup
-            DisplayAlert("Challenge Selected", $"You selected: {selected.Name}", "OK");
+            try
+            {
+                var service = new ChallengeService();
+                service.LoadChallenge(selected.Filename); // ← Copy selected XML into State.xml
 
-            // Optionally clear selection
+                // Navigate to sandbox or puzzle page
+                // In ChallengesPage.xaml.cs
+                await Shell.Current.GoToAsync("///PuzzlePage?challengeMode=true");
+
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Failed to load challenge: {ex.Message}", "OK");
+            }
+
             ((CollectionView)sender).SelectedItem = null;
         }
+
     }
 }
