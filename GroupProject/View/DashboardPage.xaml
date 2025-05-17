@@ -1,20 +1,36 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="GroupProject.View.DashboardPage" >
+             x:Class="GroupProject.View.DashboardPage"
+			 xmlns:local="clr-namespace:GroupProject.View">
 
-    <VerticalStackLayout Padding="20" Spacing="15">
-        <Label Text="Welcome to the Dashboard"
-               HorizontalOptions="Center"
-               VerticalOptions="Center"
-               FontSize="24" />
+	<Grid ColumnDefinitions="*,*"
+		  RowDefinitions="*"
+		  Padding="20">
 
-        <Button Text="My Account" Command="{Binding GoToAccountCommand}" />
-        <Button Text="Logout" Command="{Binding GoToLogoutCommand}" />
-        <Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" />
-        <Button Text="Trending Puzzles" Command="{Binding GoToTrendingCommand}" />
-		<Button Text="Learner" Command="{Binding GoToLearnerCommand}" AutomationId="LearnerPageBtn"/>
+		<!-- Left Side: Buttons in a 2x2 Grid filling available space -->
+		<Grid Grid.Column="0"
+			  RowDefinitions="*,*"
+			  ColumnDefinitions="*,*"
+			  VerticalOptions="FillAndExpand"
+			  HorizontalOptions="FillAndExpand">
+			<Button Text="My Account" Command="{Binding GoToAccountCommand}" Margin="30" Grid.Row="0" Grid.Column="0"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="0" Grid.Column="1"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+			<Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" Margin="30" Grid.Row="1" Grid.Column="0"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
+		</Grid>
 
-    </VerticalStackLayout>
-
+        <!-- Right Side: Embedded TrendingPage -->
+        <Border Grid.Column="1">
+			<ContentView>
+				<ContentView.Content>
+					<local:TrendingPage />
+				</ContentView.Content>
+			</ContentView>
+        </Border>
+    </Grid>
 </ContentPage>
