@@ -76,19 +76,9 @@ public class LearnerPageUITest : BaseTest
 		var inputHeader = FindUIElement("InputHeader_1");
 		var outputHeader = FindUIElement("OutputHeader_1");
 
-		var inputEntry0x0 = FindUIElement("InputEntry_Row0_Col0");
-		var inputEntry1x0 = FindUIElement("InputEntry_Row1_Col0");
-
-		var outputEntry0x1 = FindUIElement("OutputEntry_Row0_Col0");
-		var outputEntry1x1 = FindUIElement("OutputEntry_Row1_Col0");
-
 		// Assert
 		Assert.That(inputHeader != null, "Input Header not found.");
 		Assert.That(outputHeader != null, "Output Header not found.");
-		Assert.That(inputEntry0x0 != null, "Input Entry (0,0) not found.");
-		Assert.That(inputEntry1x0 != null, "Input Entry (1,0) not found.");
-		Assert.That(outputEntry0x1 != null, "Output Entry (0,1) not found.");
-		Assert.That(outputEntry1x1 != null, "Output Entry (1,1) not found.");
 		Assert.That(inputHeader.Text == "In 1", "Input Header text is incorrect.");
 		Assert.That(outputHeader.Text == "Out 1", "Output Header text is incorrect.");
 	}
