@@ -359,13 +359,10 @@ public partial class LearnerPage : ContentPage
 				}
 			}
 
-			
 			foreach (var gate in logicGateCards)
 			{
 				gate.CalculateOutput();
 			}
-
-			
 			
 			foreach (var outputCard in outputCards)
 			{
@@ -387,46 +384,70 @@ public partial class LearnerPage : ContentPage
 			return (inputCards, logicGateCards, outputCards);
 		}
 
-		void SearchForValidState()
+		void SearchForValidStateHeuristic()
 		{
-			
 			LogicState initialState = BuildInitialState(numberOfInputs, numberOfOutputs);
 
-			Queue<LogicState> stateQueue = new Queue<LogicState>();
-			HashSet<LogicState> visitedStates = new HashSet<LogicState>();  
+			var frontier = new PriorityQueue<LogicState, int>();
 
-			stateQueue.Enqueue(initialState);
+			var visitedStates = new HashSet<LogicState>();
 
-			while (stateQueue.Count > 0)
+			(int cost, bool initialIsSolution) = Heuristic(initialState);
+
+			if (initialIsSolution)
 			{
-				LogicState currentState = stateQueue.Dequeue();
-
-				if (!currentState.HasDisconnectedGate && DoesStateSolvePuzzle(currentState))
+				Dispatcher.Dispatch(() =>
 				{
-					Dispatcher.Dispatch(() =>
-					{
-						Console.WriteLine($"VisitedStates count: {visitedStates.Count}"); // PERFORMANCE TESTING
-						lvm.SaveStateToXml(currentState, lvm.GetXmlStateService());
-						Canvas.Children.Clear();
-						_cardMap.Clear();
-						_connections.Clear();
-						AssignCardPositions();
-						loadCanvasFromXml();
-						DisplayAlert("Success", "Found a valid state!", "OK");
-					});
-					return;
-				}
+					lvm.SaveStateToXml(initialState, lvm.GetXmlStateService());
+					Canvas.Children.Clear();
+					_cardMap.Clear();
+					_connections.Clear();
+					AssignCardPositions();
+					loadCanvasFromXml();
+					DisplayAlert("Success", "Found a valid state!", "OK");
+				});
+				return;
+			}
+
+			frontier.Enqueue(initialState, cost);
+
+			visitedStates.Add(initialState);
+
+			while (frontier.Count > 0)
+			{
+				LogicState currentState = frontier.Dequeue();
 
 				foreach (LogicState neighbor in GenerateNeighborStates(currentState))
 				{
 					if (!visitedStates.Contains(neighbor))
 					{
 						visitedStates.Add(neighbor);
-						stateQueue.Enqueue(neighbor);
+						(int newCost, bool isSolution) = Heuristic(neighbor);
+
+						if (!neighbor.HasDisconnectedGate && isSolution)
+						{
+							Dispatcher.Dispatch(() =>
+							{
+								Console.WriteLine($"VisitedStates count: {visitedStates.Count}"); // PERFORMANCE TESTING
+								lvm.SaveStateToXml(neighbor, lvm.GetXmlStateService());
+								Canvas.Children.Clear();
+								_cardMap.Clear();
+								_connections.Clear();
+								AssignCardPositions();
+								loadCanvasFromXml();
+								DisplayAlert("Success", "Found a valid state!", "OK");
+							});
+							return;
+						}
+						frontier.Enqueue(neighbor, newCost);
 					}
 				}
 			}
-			DisplayAlert("Failure", "No valid state found.", "OK");
+
+			Dispatcher.Dispatch(() =>
+			{
+				DisplayAlert("Failure", "No valid state found.", "OK");
+			});
 		}
 
 		IEnumerable<LogicState> GenerateNeighborStates(LogicState currentState)
@@ -501,7 +522,44 @@ public partial class LearnerPage : ContentPage
 			}
 			return true;
 		}
-		SearchForValidState();
+
+		(int cost, bool isSolution) Heuristic(LogicState state)
+		{
+			var truthRows = GetTruthTableRowsFromSidebar();
+			int totalMismatch = 0;
+			int complexityPenalty = 0;
+
+			foreach (var row in truthRows)
+			{
+				List<bool> inputValues = row.Inputs.ToList();
+
+				var (inputCards, logicGateCards, outputCards) = EfficientCalculateLogicState(state, inputValues);
+
+				var orderedOutputCards = outputCards.OrderBy(o => o.Id).ToList();
+
+				for (int i = 0; i < row.ExpectedOutputs.Length; i++)
+				{
+					bool computedOutput = orderedOutputCards[i].Output;
+					bool expectedOutput = row.ExpectedOutputs[i];
+
+
+					if (computedOutput != expectedOutput)
+					{
+						totalMismatch += 100;
+					}
+				}
+			}
+
+			complexityPenalty += state.Gates.Count() * 10;
+			complexityPenalty += state.Connections.Count() * 1;
+
+			int cost = totalMismatch + complexityPenalty;
+
+			bool isSolution = totalMismatch == 0;
+
+			return (cost, isSolution);
+		}
+		SearchForValidStateHeuristic();
 	}
 
 	private void AssignCardPositions()
