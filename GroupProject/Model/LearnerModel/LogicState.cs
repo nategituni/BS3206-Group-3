@@ -61,9 +61,4 @@ public class LogicState
 
 		return hash;
 	}
-
-	public static void CalculateLogicState(List<bool> inputs)
-	{
-		
-	}
 }

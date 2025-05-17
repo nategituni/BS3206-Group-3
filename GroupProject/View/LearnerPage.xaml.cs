@@ -252,14 +252,10 @@ public partial class LearnerPage : ContentPage
 				
 				List<bool> inputValues = row.Inputs.ToList();
 
-				
-				
 				var (inputCards, logicGateCards, outputCards) = EfficientCalculateLogicState(state, inputValues);
 
-				
 				var orderedOutputCards = outputCards.OrderBy(o => o.Id).ToList();
 
-				
 				for (int i = 0; i < row.ExpectedOutputs.Length; i++)
 				{
 					bool computedOutput = orderedOutputCards[i].Output;
@@ -294,7 +290,6 @@ public partial class LearnerPage : ContentPage
 				}
 			}
 
-			
 			List<LogicGateCard> logicGateCards = new List<LogicGateCard>();
 			for (int i = 0; i < state.Gates.Count; i++)
 			{
@@ -308,7 +303,6 @@ public partial class LearnerPage : ContentPage
 				}
 			}
 
-			
 			List<OutputCard> outputCards = new List<OutputCard>();
 			for (int i = 0; i < state.Gates.Count; i++)
 			{
@@ -320,13 +314,9 @@ public partial class LearnerPage : ContentPage
 				}
 			}
 
-			
 			List<IOutputProvider> availableProviders = new List<IOutputProvider>();
 			availableProviders.AddRange(inputCards);
 			availableProviders.AddRange(logicGateCards);
-			
-
-			
 			
 			var groupedConnections = state.Connections.GroupBy(c => c.to);
 			foreach (var group in groupedConnections)
@@ -415,6 +405,7 @@ public partial class LearnerPage : ContentPage
 				{
 					Dispatcher.Dispatch(() =>
 					{
+						Console.WriteLine($"VisitedStates count: {visitedStates.Count}"); // PERFORMANCE TESTING
 						lvm.SaveStateToXml(currentState, lvm.GetXmlStateService());
 						Canvas.Children.Clear();
 						_cardMap.Clear();
@@ -442,7 +433,7 @@ public partial class LearnerPage : ContentPage
 		{
 			List<LogicState> neighbors = new List<LogicState>();
 
-			foreach (var gateType in new[] { "And", "Or", "Xor", "Not", "Nand", "Nor", "Xnor" })  
+			foreach (var gateType in new[] { "And", "Xor", "Or", "Not", "Nand", "Nor", "Xnor" })  
 			{
 				LogicState newState = currentState.Clone();
 				newState.Gates.Add(gateType);
@@ -462,6 +453,13 @@ public partial class LearnerPage : ContentPage
 						continue;
 
 					string targetGate = currentState.Gates[targetIndex];
+					string sourceGate = currentState.Gates[sourceIndex];
+
+					if (targetGate.StartsWith("Input"))
+						continue;
+
+					if (sourceGate.StartsWith("Output"))
+						continue;
 
 					if ((targetGate.StartsWith("Output") || targetGate.StartsWith("Not")) && currentState.Connections.Count(c => c.to == targetIndex) >= 1)
 						continue;
@@ -471,6 +469,9 @@ public partial class LearnerPage : ContentPage
 
 					LogicState neighbor = currentState.Clone();
 					neighbor.Connections.Add((sourceIndex, targetIndex));
+
+					if (CycleChecker.CheckForCycle(neighbor))
+						continue;
 
 					neighbor.HasDisconnectedGate = !AreAllGatesConnected(neighbor);
 					neighbors.Add(neighbor);
