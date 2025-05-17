@@ -4,7 +4,7 @@ using System.Linq;
 using System.Xml.Linq;
 using GroupProject.Model.LogicModel;
 using Microsoft.Maui.Storage;
-
+//placeholder
 namespace GroupProject.Model.LogicModel
 {
     class Validator
