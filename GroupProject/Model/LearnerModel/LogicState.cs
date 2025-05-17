@@ -1,5 +1,7 @@
 namespace GroupProject.Model.LearnerModel;
 
+using GroupProject.Model.LogicModel;
+
 public class LogicState
 {
 	public List<string> Gates;
@@ -58,5 +60,10 @@ public class LogicState
 		}
 
 		return hash;
+	}
+
+	public static void CalculateLogicState(List<bool> inputs)
+	{
+		
 	}
 }
