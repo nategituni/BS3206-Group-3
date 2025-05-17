@@ -265,17 +265,17 @@ public partial class LearnerPage : ContentPage
 
 				try
 				{
-					lvm.ReshuffleIds();  
+					lvm.ReshuffleIds();
 				}
 				catch (Exception ex)
 				{
 					if (ex.Message.Contains("A dependency cycle was detected"))
 					{
-						return false;  
+						return false;
 					}
 					else
 					{
-						throw; 
+						throw;
 					}
 				}
 
@@ -306,7 +306,7 @@ public partial class LearnerPage : ContentPage
 			LogicState initialState = BuildInitialState(numberOfInputs, numberOfOutputs);
 
 			Queue<LogicState> stateQueue = new Queue<LogicState>();
-			HashSet<int> visitedStates = new HashSet<int>();  
+			HashSet<LogicState> visitedStates = new HashSet<LogicState>();  
 
 			stateQueue.Enqueue(initialState);
 
@@ -316,7 +316,7 @@ public partial class LearnerPage : ContentPage
 
 				lvm.SaveStateToXml(currentState, lvm.GetXmlStateService());	
 
-				if (DoesStateSolvePuzzle(currentState))
+				if (!currentState.HasDisconnectedGate && DoesStateSolvePuzzle(currentState))
 				{
 					Dispatcher.Dispatch(() =>
 					{
@@ -332,10 +332,9 @@ public partial class LearnerPage : ContentPage
 
 				foreach (LogicState neighbor in GenerateNeighborStates(currentState))
 				{
-					int stateHash = neighbor.GetHashCode();
-					if (!visitedStates.Contains(stateHash))
+					if (!visitedStates.Contains(neighbor))
 					{
-						visitedStates.Add(stateHash);
+						visitedStates.Add(neighbor);
 						stateQueue.Enqueue(neighbor);
 					}
 				}
@@ -351,6 +350,8 @@ public partial class LearnerPage : ContentPage
 			{
 				LogicState newState = currentState.Clone();
 				newState.Gates.Add(gateType);
+
+				newState.HasDisconnectedGate = true;
 				neighbors.Add(newState);
 			}
 
@@ -361,9 +362,12 @@ public partial class LearnerPage : ContentPage
 					if (sourceIndex == targetIndex)  
 						continue;
 
+					if (currentState.Connections.Any(c => c.from == sourceIndex && c.to == targetIndex))
+						continue;
+
 					string targetGate = currentState.Gates[targetIndex];
 
-					if (targetGate.StartsWith("Output") && currentState.Connections.Count(c => c.to == targetIndex) >= 1)
+					if ((targetGate.StartsWith("Output") || targetGate.StartsWith("Not")) && currentState.Connections.Count(c => c.to == targetIndex) >= 1)
 						continue;
 
 					if (!targetGate.StartsWith("Input") && !targetGate.StartsWith("Output") && currentState.Connections.Count(c => c.to == targetIndex) >= 2)
@@ -371,11 +375,34 @@ public partial class LearnerPage : ContentPage
 
 					LogicState neighbor = currentState.Clone();
 					neighbor.Connections.Add((sourceIndex, targetIndex));
+
+					neighbor.HasDisconnectedGate = !AreAllGatesConnected(neighbor);
 					neighbors.Add(neighbor);
 				}
 			}
 
 			return neighbors;
+		}
+
+		bool AreAllGatesConnected(LogicState state)
+		{
+			// For each gate index...
+			for (int i = 0; i < state.Gates.Count; i++)
+			{
+				// Use the gate’s type to decide which rule applies.
+				string gateType = state.Gates[i];
+
+				if (gateType.StartsWith("Input") || gateType.StartsWith("Output"))
+					continue;
+
+				// Count incoming and outgoing connections
+				int incomingCount = state.Connections.Count(c => c.to == i);
+				int outgoingCount = state.Connections.Count(c => c.from == i);
+
+				if (incomingCount < 1 || outgoingCount < 1)
+					return false;
+			}
+			return true;
 		}
 		
 		SearchForValidState();
