@@ -87,7 +87,7 @@ public partial class LearnerPage : ContentPage
 
 		var headerLayout = new StackLayout { Orientation = StackOrientation.Horizontal };
 
-		// Create headers for inputs
+		
 		for (int i = 0; i < numberOfInputs; i++)
 		{
 			var inputHeader = new Label
@@ -97,13 +97,13 @@ public partial class LearnerPage : ContentPage
 				WidthRequest = 50,
 				HorizontalTextAlignment = TextAlignment.Center
 			};
-			// Set a unique Automation ID for each input header
+			
 			inputHeader.AutomationId = $"InputHeader_{i + 1}";
 
 			headerLayout.Children.Add(inputHeader);
 		}
 
-		// Create headers for outputs
+		
 		for (int i = 0; i < numberOfOutputs; i++)
 		{
 			var outputHeader = new Label
@@ -113,7 +113,7 @@ public partial class LearnerPage : ContentPage
 				WidthRequest = 50,
 				HorizontalTextAlignment = TextAlignment.Center
 			};
-			// Set a unique Automation ID for each output header
+			
 			outputHeader.AutomationId = $"OutputHeader_{i + 1}";
 
 			headerLayout.Children.Add(outputHeader);
@@ -126,7 +126,7 @@ public partial class LearnerPage : ContentPage
 		{
 			var rowLayout = new StackLayout { Orientation = StackOrientation.Horizontal };
 
-			// Generate input entries for this row
+			
 			for (int col = 0; col < numberOfInputs; col++)
 			{
 				var inputEntry = new Entry
@@ -135,13 +135,13 @@ public partial class LearnerPage : ContentPage
 					Keyboard = Keyboard.Numeric,
 					WidthRequest = 50
 				};
-				// Example AutomationID that includes row and column info
+				
 				inputEntry.AutomationId = $"InputEntry_Row{row}_Col{col}";
 
 				rowLayout.Children.Add(inputEntry);
 			}
 
-			// Generate output entries for this row
+			
 			for (int col = 0; col < numberOfOutputs; col++)
 			{
 				var outputEntry = new Entry
@@ -150,7 +150,7 @@ public partial class LearnerPage : ContentPage
 					Keyboard = Keyboard.Numeric,
 					WidthRequest = 50
 				};
-				// Example AutomationID that includes row and column info
+				
 				outputEntry.AutomationId = $"OutputEntry_Row{row}_Col{col}";
 
 				rowLayout.Children.Add(outputEntry);
@@ -246,111 +246,220 @@ public partial class LearnerPage : ContentPage
 		bool DoesStateSolvePuzzle(LogicState state)
 		{
 			var truthRows = GetTruthTableRowsFromSidebar();
-			var xmlService = new XmlStateService(statePath);
-			bool overallValid = true;
-
-			lvm.SaveStateToXml(state, lvm.GetXmlStateService());
 
 			foreach (var row in truthRows)
 			{
-				int inputIndex = 0;
-				foreach (var gate in state.Gates)
+				
+				List<bool> inputValues = row.Inputs.ToList();
+
+				var (inputCards, logicGateCards, outputCards) = EfficientCalculateLogicState(state, inputValues);
+
+				var orderedOutputCards = outputCards.OrderBy(o => o.Id).ToList();
+
+				for (int i = 0; i < row.ExpectedOutputs.Length; i++)
 				{
-					if (gate.StartsWith("Input"))
+					bool computedOutput = orderedOutputCards[i].Output;
+					bool expectedOutput = row.ExpectedOutputs[i];
+
+					
+					if (computedOutput != expectedOutput)
 					{
-						xmlService.UpdateInputCardValue(inputIndex + 1, row.Inputs[inputIndex]);
-						inputIndex++;
+						return false;
 					}
-				}
-
-				try
-				{
-					lvm.ReshuffleIds();  
-				}
-				catch (Exception ex)
-				{
-					if (ex.Message.Contains("A dependency cycle was detected"))
-					{
-						return false;  
-					}
-					else
-					{
-						throw; 
-					}
-				}
-
-				var calculateParser = new StateParser();
-
-				var (_, _, outputCardsCalculated) = calculateParser.parseCards();
-
-				for (int i = 0; i < numberOfOutputs; i++)
-				{
-					if (outputCardsCalculated[i].Output != row.ExpectedOutputs[i])
-					{
-						overallValid = false;
-						break;
-					}
-				}
-
-				if (!overallValid)
-				{
-					break;
 				}
 			}
-			return overallValid;
+			
+			return true;
 		}
 
-		void SearchForValidState()
+		static (List<IOCard> inputCards, List<LogicGateCard> logicGateCards, List<OutputCard> outputCards) EfficientCalculateLogicState(LogicState state, List<bool> inputs)
 		{
 			
+			List<IOCard> inputCards = new List<IOCard>();
+			int inputPos = 0;
+			for (int i = 0; i < state.Gates.Count; i++)
+			{
+				if (state.Gates[i].StartsWith("Input", StringComparison.OrdinalIgnoreCase))
+				{
+					IOCard card = new IOCard();
+					card.Id = i; 
+					
+					card.SetValue(inputs[inputPos]);
+					inputCards.Add(card);
+					inputPos++;
+				}
+			}
+
+			List<LogicGateCard> logicGateCards = new List<LogicGateCard>();
+			for (int i = 0; i < state.Gates.Count; i++)
+			{
+				if (!state.Gates[i].StartsWith("Input", StringComparison.OrdinalIgnoreCase) &&
+					!state.Gates[i].StartsWith("Output", StringComparison.OrdinalIgnoreCase))
+				{
+					
+					LogicGateCard gate = new LogicGateCard(state.Gates[i]);
+					gate.Id = i;
+					logicGateCards.Add(gate);
+				}
+			}
+
+			List<OutputCard> outputCards = new List<OutputCard>();
+			for (int i = 0; i < state.Gates.Count; i++)
+			{
+				if (state.Gates[i].StartsWith("Output", StringComparison.OrdinalIgnoreCase))
+				{
+					OutputCard card = new OutputCard();
+					card.Id = i;
+					outputCards.Add(card);
+				}
+			}
+
+			List<IOutputProvider> availableProviders = new List<IOutputProvider>();
+			availableProviders.AddRange(inputCards);
+			availableProviders.AddRange(logicGateCards);
+			
+			var groupedConnections = state.Connections.GroupBy(c => c.to);
+			foreach (var group in groupedConnections)
+			{
+				int targetIndex = group.Key;
+				var connectionsForTarget = group.ToList();
+				
+				var provider1Id = connectionsForTarget[0].from;
+				var provider1 = availableProviders.FirstOrDefault(p => p.Id == provider1Id);
+
+				
+				if (state.Gates[targetIndex].StartsWith("Output", StringComparison.OrdinalIgnoreCase))
+				{
+					var outputCard = outputCards.FirstOrDefault(o => o.Id == targetIndex);
+					if (outputCard != null)
+					{
+						outputCard.Input1Card = provider1;
+						if (provider1 != null)
+						{
+							
+							outputCard.SetValue(provider1.Output);
+							outputCard.Input1 = provider1.Output;
+						}
+					}
+				}
+				else 
+				{
+					var logicGate = logicGateCards.FirstOrDefault(g => g.Id == targetIndex);
+					if (logicGate != null)
+					{
+						logicGate.Input1Card = provider1;
+						
+						if (connectionsForTarget.Count > 1)
+						{
+							var provider2Id = connectionsForTarget[1].from;
+							var provider2 = availableProviders.FirstOrDefault(p => p.Id == provider2Id);
+							logicGate.Input2Card = provider2;
+						}
+					}
+				}
+			}
+
+			foreach (var gate in logicGateCards)
+			{
+				gate.CalculateOutput();
+			}
+			
+			foreach (var outputCard in outputCards)
+			{
+				
+				
+				var connection = state.Connections.FirstOrDefault(c => c.to == outputCard.Id);
+				if (connection != default)
+				{
+					var provider = availableProviders.FirstOrDefault(p => p.Id == connection.from);
+					outputCard.Input1Card = provider;
+					if (provider != null)
+					{
+						outputCard.SetValue(provider.Output);
+						outputCard.Input1 = provider.Output;
+					}
+				}
+			}
+
+			return (inputCards, logicGateCards, outputCards);
+		}
+
+		void SearchForValidStateHeuristic()
+		{
 			LogicState initialState = BuildInitialState(numberOfInputs, numberOfOutputs);
 
-			Queue<LogicState> stateQueue = new Queue<LogicState>();
-			HashSet<int> visitedStates = new HashSet<int>();  
+			var frontier = new PriorityQueue<LogicState, int>();
 
-			stateQueue.Enqueue(initialState);
+			var visitedStates = new HashSet<LogicState>();
 
-			while (stateQueue.Count > 0)
+			(int cost, bool initialIsSolution) = Heuristic(initialState);
+
+			if (initialIsSolution)
 			{
-				LogicState currentState = stateQueue.Dequeue();
-
-				lvm.SaveStateToXml(currentState, lvm.GetXmlStateService());	
-
-				if (DoesStateSolvePuzzle(currentState))
+				Dispatcher.Dispatch(() =>
 				{
-					Dispatcher.Dispatch(() =>
-					{
-						Canvas.Children.Clear();
-						_cardMap.Clear();
-						_connections.Clear();
-						AssignCardPositions();
-						loadCanvasFromXml();
-						DisplayAlert("Success", "Found a valid state!", "OK");
-					});
-					return;
-				}
+					lvm.SaveStateToXml(initialState, lvm.GetXmlStateService());
+					Canvas.Children.Clear();
+					_cardMap.Clear();
+					_connections.Clear();
+					AssignCardPositions();
+					loadCanvasFromXml();
+					DisplayAlert("Success", "Found a valid state!", "OK");
+				});
+				return;
+			}
+
+			frontier.Enqueue(initialState, cost);
+
+			visitedStates.Add(initialState);
+
+			while (frontier.Count > 0)
+			{
+				LogicState currentState = frontier.Dequeue();
 
 				foreach (LogicState neighbor in GenerateNeighborStates(currentState))
 				{
-					int stateHash = neighbor.GetHashCode();
-					if (!visitedStates.Contains(stateHash))
+					if (!visitedStates.Contains(neighbor))
 					{
-						visitedStates.Add(stateHash);
-						stateQueue.Enqueue(neighbor);
+						visitedStates.Add(neighbor);
+						(int newCost, bool isSolution) = Heuristic(neighbor);
+
+						if (!neighbor.HasDisconnectedGate && isSolution)
+						{
+							Dispatcher.Dispatch(() =>
+							{
+								Console.WriteLine($"VisitedStates count: {visitedStates.Count}"); // PERFORMANCE TESTING
+								lvm.SaveStateToXml(neighbor, lvm.GetXmlStateService());
+								Canvas.Children.Clear();
+								_cardMap.Clear();
+								_connections.Clear();
+								AssignCardPositions();
+								loadCanvasFromXml();
+								DisplayAlert("Success", "Found a valid state!", "OK");
+							});
+							return;
+						}
+						frontier.Enqueue(neighbor, newCost);
 					}
 				}
 			}
-			DisplayAlert("Failure", "No valid state found.", "OK");
+
+			Dispatcher.Dispatch(() =>
+			{
+				DisplayAlert("Failure", "No valid state found.", "OK");
+			});
 		}
 
 		IEnumerable<LogicState> GenerateNeighborStates(LogicState currentState)
 		{
 			List<LogicState> neighbors = new List<LogicState>();
 
-			foreach (var gateType in new[] { "And", "Or", "Xor", "Not", "Nand", "Nor", "Xnor" })  
+			foreach (var gateType in new[] { "And", "Xor", "Or", "Not", "Nand", "Nor", "Xnor" })  
 			{
 				LogicState newState = currentState.Clone();
 				newState.Gates.Add(gateType);
+
+				newState.HasDisconnectedGate = true;
 				neighbors.Add(newState);
 			}
 
@@ -361,9 +470,19 @@ public partial class LearnerPage : ContentPage
 					if (sourceIndex == targetIndex)  
 						continue;
 
-					string targetGate = currentState.Gates[targetIndex];
+					if (currentState.Connections.Any(c => c.from == sourceIndex && c.to == targetIndex))
+						continue;
 
-					if (targetGate.StartsWith("Output") && currentState.Connections.Count(c => c.to == targetIndex) >= 1)
+					string targetGate = currentState.Gates[targetIndex];
+					string sourceGate = currentState.Gates[sourceIndex];
+
+					if (targetGate.StartsWith("Input"))
+						continue;
+
+					if (sourceGate.StartsWith("Output"))
+						continue;
+
+					if ((targetGate.StartsWith("Output") || targetGate.StartsWith("Not")) && currentState.Connections.Count(c => c.to == targetIndex) >= 1)
 						continue;
 
 					if (!targetGate.StartsWith("Input") && !targetGate.StartsWith("Output") && currentState.Connections.Count(c => c.to == targetIndex) >= 2)
@@ -371,14 +490,76 @@ public partial class LearnerPage : ContentPage
 
 					LogicState neighbor = currentState.Clone();
 					neighbor.Connections.Add((sourceIndex, targetIndex));
+
+					if (CycleChecker.CheckForCycle(neighbor))
+						continue;
+
+					neighbor.HasDisconnectedGate = !AreAllGatesConnected(neighbor);
 					neighbors.Add(neighbor);
 				}
 			}
 
 			return neighbors;
 		}
-		
-		SearchForValidState();
+
+		bool AreAllGatesConnected(LogicState state)
+		{
+			
+			for (int i = 0; i < state.Gates.Count; i++)
+			{
+				
+				string gateType = state.Gates[i];
+
+				if (gateType.StartsWith("Input") || gateType.StartsWith("Output"))
+					continue;
+
+				
+				int incomingCount = state.Connections.Count(c => c.to == i);
+				int outgoingCount = state.Connections.Count(c => c.from == i);
+
+				if (incomingCount < 1 || outgoingCount < 1)
+					return false;
+			}
+			return true;
+		}
+
+		(int cost, bool isSolution) Heuristic(LogicState state)
+		{
+			var truthRows = GetTruthTableRowsFromSidebar();
+			int totalMismatch = 0;
+			int complexityPenalty = 0;
+
+			foreach (var row in truthRows)
+			{
+				List<bool> inputValues = row.Inputs.ToList();
+
+				var (inputCards, logicGateCards, outputCards) = EfficientCalculateLogicState(state, inputValues);
+
+				var orderedOutputCards = outputCards.OrderBy(o => o.Id).ToList();
+
+				for (int i = 0; i < row.ExpectedOutputs.Length; i++)
+				{
+					bool computedOutput = orderedOutputCards[i].Output;
+					bool expectedOutput = row.ExpectedOutputs[i];
+
+
+					if (computedOutput != expectedOutput)
+					{
+						totalMismatch += 100;
+					}
+				}
+			}
+
+			complexityPenalty += state.Gates.Count() * 10;
+			complexityPenalty += state.Connections.Count() * 1;
+
+			int cost = totalMismatch + complexityPenalty;
+
+			bool isSolution = totalMismatch == 0;
+
+			return (cost, isSolution);
+		}
+		SearchForValidStateHeuristic();
 	}
 
 	private void AssignCardPositions()
@@ -505,7 +686,7 @@ public partial class LearnerPage : ContentPage
         if (BindingContext is not LearnerViewModel lvm)
             return;
 
-        // Load and render all cards
+        
         var cards = lvm.LoadCards();
         foreach (var card in cards)
         {
@@ -518,7 +699,7 @@ public partial class LearnerPage : ContentPage
             );
         }
 
-        // Load and draw all connections
+        
         var conns = lvm.LoadConnections();
         foreach (var conn in conns)
         {
