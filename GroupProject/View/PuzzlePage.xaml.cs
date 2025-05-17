@@ -34,9 +34,6 @@ public partial class PuzzlePage : ContentPage
     public PuzzlePage()
     {
         InitializeComponent();
-        BindingContext = new PuzzleViewModel();
-
-        // InitizaliseFilewaterHere Michael
 
         foreach (var g in Enum.GetValues<GateTypeEnum>())
         {
@@ -49,27 +46,32 @@ public partial class PuzzlePage : ContentPage
         }
 
         SizeChanged += (_, _) => UpdateCanvasSize();
-
-        LoadInitialCanvas();
     }
+
+	protected override void OnAppearing()
+	{
+		base.OnAppearing();
+		BindingContext = new PuzzleViewModel();
+		LoadInitialCanvas();
+	}
 
     private async void Save_Clicked(object sender, EventArgs e)
-    {
-        if (BindingContext is not PuzzleViewModel vm) return;
+	{
+		if (BindingContext is not PuzzleViewModel vm) return;
 
-        var userEmail = Preferences.Get("UserEmail", null);
-        if (string.IsNullOrEmpty(userEmail))
-        {
-            await DisplayAlert("Error", "User email not found. Please log in.", "OK");
-            return;
-        }
+		var userEmail = Preferences.Get("UserEmail", null);
+		if (string.IsNullOrEmpty(userEmail))
+		{
+			await DisplayAlert("Error", "User email not found. Please log in.", "OK");
+			return;
+		}
 
-        var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
-        var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
+		var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
+		var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
 
-        if (!string.IsNullOrWhiteSpace(userInput))
-            await vm.SaveAsync(userId, userInput);
-    }
+		if (!string.IsNullOrWhiteSpace(userInput))
+			await vm.SaveAsync(userId, userInput);
+	}
 
     private void Clear_Clicked(object s, EventArgs e)
     {

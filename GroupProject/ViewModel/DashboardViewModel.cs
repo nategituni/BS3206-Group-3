@@ -26,7 +26,9 @@ namespace GroupProject.ViewModel
 
 		private async Task GoToLogoutPageAsync()
 		{
-			await Shell.Current.GoToAsync("///LoginPage");
+			Preferences.Remove("UserEmail");
+
+			await Shell.Current.GoToAsync("//LoginPage");
 		}
 
 		private async Task GoToSandboxPageAsync()
