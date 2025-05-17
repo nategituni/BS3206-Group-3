@@ -21,7 +21,7 @@
 			<Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" Margin="30" Grid.Row="1" Grid.Column="0"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
 			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
-					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
 		</Grid>
 
         <!-- Right Side: Embedded TrendingPage -->
