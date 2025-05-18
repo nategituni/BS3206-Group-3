@@ -33,8 +33,7 @@
                         <Label Text="{Binding Name}" 
                             FontAttributes="Bold" 
                             FontSize="18"
-                            TextColor="{AppThemeBinding Light='Black', Dark='White'}" 
-                            AutomationID="ChallengeText"/>
+                            TextColor="{AppThemeBinding Light='Black', Dark='White'}"/>
 
                         <Label Text="{Binding Difficulty}"
                             FontSize="14"
