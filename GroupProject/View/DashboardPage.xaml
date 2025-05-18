@@ -15,7 +15,6 @@
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*" />
 				<RowDefinition Height="*" />
-        <RowDefinition Height="*" />
 				<RowDefinition Height="Auto" />
 			</Grid.RowDefinitions>
 
@@ -29,7 +28,7 @@
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
 
 			<Button Text="Challenges" Command="{Binding GoToChallengesCommand}" Margin="30" Grid.Row="0" Grid.Column="1"
-					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="ChallengesPageBtn"/>
 
 			<Button Text="Sandbox" Command="{Binding GoToSandboxCommand}" Margin="30" Grid.Row="1" Grid.Column="0"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
@@ -37,10 +36,10 @@
 			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
 
-			<Button Text="Challenges" Command="{Binding GoToChallengesCommand}" Margin="30" Grid.Row="2" Grid.Column="0"
-					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="ChallengesPageBtn"/>
+			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="0"
+					 HorizontalOptions="FillAndExpand"/>
 
-			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+			<Button Text="Challenge" Command="{Binding GoToChallengeCommand}" Margin="30" Grid.Row="2" Grid.Column="1"
 					 HorizontalOptions="FillAndExpand"/>
 		</Grid>
 

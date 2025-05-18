@@ -41,10 +41,10 @@
         Title="Challenges"
         ContentTemplate="{DataTemplate local:ChallengesPage}"
         Route="ChallengesPage" />
+
     <ShellContent
         Title="Challenge"
         ContentTemplate="{DataTemplate local:ChallengePage}" 
         Route="ChallengePage"/>
-
-
+  
 </Shell>
