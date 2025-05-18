@@ -138,6 +138,7 @@ public partial class LearnerPage : ContentPage
 				
 				inputEntry.AutomationId = $"InputEntry_Row{row}_Col{col}";
 
+
 				rowLayout.Children.Add(inputEntry);
 			}
 

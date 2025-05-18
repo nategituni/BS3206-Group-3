@@ -2,10 +2,9 @@ using NUnit.Framework;
 
 namespace GroupProject.UITests.View;
 
-public class LearnerPageUITest : BaseTest
+public class NateUITests : BaseTest
 {
-
-	public void NavigateToLearnerPage()
+	public void NavigateToDashboardPage()
 	{
 		var emailEntry = FindUIElement("LoginEmailEntryField");
 		var passwordEntry = FindUIElement("LoginPasswordEntryField");
@@ -22,33 +21,34 @@ public class LearnerPageUITest : BaseTest
 		loginButton.Click();
 		Thread.Sleep(1000);
 
-		var learnerPageButton = FindUIElement("LearnerPageBtn");
-
-		Assert.That(learnerPageButton != null, "Learner Page button not found.");
-
-		learnerPageButton.Click();
-		Thread.Sleep(1000);
+		var learnerPageBtn = FindUIElement("LearnerPageBtn");
+		Assert.That(learnerPageBtn != null, "Learner Page button not found.");
 	}
 
-
 	[Test]
-	public void LearnerPageInitialization()
+	public void AllOtherButtonsVisible()
 	{
+		NavigateToDashboardPage();
 
-		// Arrange
-		NavigateToLearnerPage();
+		var MyAccountButton = FindUIElement("MyAccountPageBtn");
+		var LogoutButton = FindUIElement("LogoutBtn");
+		var ChallengesButton = FindUIElement("ChallengesPageBtn");
+		var SandboxButton = FindUIElement("SandboxPageBtn");
 
-		// Act
-		var runLearnerButton = FindUIElement("RunLearnerBtn");
-
-		// Assert
-		Assert.That(runLearnerButton != null, "Run Learner button not found.");
+		Assert.That(MyAccountButton != null, "My Account button not found.");
+		Assert.That(LogoutButton != null, "Logout button not found.");
+		Assert.That(ChallengesButton != null, "Challenges button not found.");
+		Assert.That(SandboxButton != null, "Sandbox button not found.");
 	}
 
 	[Test]
 	public void LearnerPageTruthTableEntry()
 	{
 		// Arrange
+		var learnerPageBtn = FindUIElement("LearnerPageBtn");
+		learnerPageBtn.Click();
+		Thread.Sleep(1000);
+
 		var truthTableEntryInput = FindUIElement("TruthTableInputEntryField");
 		var truthTableEntryOutput = FindUIElement("TruthTableOutputEntryField");
 		var generateTruthTableBtn = FindUIElement("GenerateTruthTableBtn");
@@ -75,6 +75,9 @@ public class LearnerPageUITest : BaseTest
 
 		var inputHeader = FindUIElement("InputHeader_1");
 		var outputHeader = FindUIElement("OutputHeader_1");
+
+		outputHeader.Click();
+		Thread.Sleep(1000);
 
 		// Assert
 		Assert.That(inputHeader != null, "Input Header not found.");
