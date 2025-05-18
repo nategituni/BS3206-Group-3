@@ -8,11 +8,23 @@ namespace GroupProject.View
 {
     public partial class ChallengesPage : ContentPage
     {
+        
+
         public ChallengesPage()
         {
             InitializeComponent();
             BindingContext = new ChallengesViewModel();
 
+        }
+        
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            if (BindingContext is ChallengesViewModel vm)
+            {
+                vm.LoadChallengesFromFiles(); // Refresh on return
+            }
         }
 
         private async void OnChallengeSelected(object sender, SelectionChangedEventArgs e)
@@ -27,11 +39,12 @@ namespace GroupProject.View
             try
             {
                 var service = new ChallengeService();
-                service.LoadChallenge(selected.Filename); // ← Copy selected XML into State.xml
+                service.LoadChallenge(selected.Filename);
 
-                // Navigate to sandbox or puzzle page
-                // In ChallengesPage.xaml.cs
-                await Shell.Current.GoToAsync("///PuzzlePage?challengeMode=true");
+                ChallengeSession.CurrentFilename = selected.Filename;
+                await Shell.Current.GoToAsync($"///ChallengePage");
+
+
 
             }
             catch (Exception ex)

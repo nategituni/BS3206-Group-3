@@ -28,5 +28,17 @@ namespace GroupProject.Services
                             .Select(Path.GetFileName)
                             .ToList();
         }
+
+        public void SaveBackToChallengeFile(string filename)
+        {
+            var challengePath = Path.Combine(_challengeDir, filename);
+            var statePath = _statePath;
+
+            if (!File.Exists(statePath))
+                throw new FileNotFoundException("State.xml not found.");
+
+            File.Copy(statePath, challengePath, overwrite: true);
+        }
+
     }
 }

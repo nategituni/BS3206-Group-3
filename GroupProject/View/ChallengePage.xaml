@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage
+    x:Class="GroupProject.View.ChallengePage"
+    xmlns:converters="clr-namespace:GroupProject.Model.LogicModel"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Challenge">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem
+            Text="Save Challenge"
+            Order="Primary"
+            Priority="0"
+            Clicked="Save_Clicked" />
+		<ToolbarItem
+			Text="Simulate"
+			Order="Primary"
+			Priority="3"
+			Clicked="Simulate_Clicked" />
+    </ContentPage.ToolbarItems>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <StackLayout Grid.Column="0" Padding="12" BackgroundColor="#333" Spacing="10" x:Name="Sidebar" />
+
+        <!-- Two-axis scrolling -->
+        <ScrollView x:Name="VerticalScroll"
+                    Grid.Column="1"
+                    Orientation="Vertical"
+                    VerticalScrollBarVisibility="Always"
+                    HorizontalScrollBarVisibility="Never"
+                    VerticalOptions="FillAndExpand"
+                    HorizontalOptions="FillAndExpand">
+
+            <ScrollView x:Name="HorizontalScroll"
+                        Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Always"
+                        VerticalScrollBarVisibility="Never"
+                        VerticalOptions="FillAndExpand"
+                        HorizontalOptions="FillAndExpand">
+
+                <AbsoluteLayout
+                    x:Name="Canvas"
+                    BackgroundColor="#222" />
+            </ScrollView>
+        </ScrollView>
+    </Grid>
+</ContentPage>

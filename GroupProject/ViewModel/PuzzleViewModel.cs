@@ -10,9 +10,8 @@ public class PuzzleViewModel
 {
     private readonly string _statePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
     private readonly XmlStateService _xmlService;
-    public bool IsChallengeMode { get; private set; } = false;
-    public string? ChallengeTitle { get; private set; }
-    public Dictionary<int, string> ExpectedOutputs { get; private set; } = new();
+    
+    public string? CurrentChallengeFilename { get; set; }
 
 
     public PuzzleViewModel()
@@ -108,27 +107,6 @@ public class PuzzleViewModel
 
         return conns;
     }
-
-    public void LoadChallengeMetadata()
-{
-    var doc = _xmlService.Document;
-    var metadata = doc.Descendants("ChallengeMetadata").FirstOrDefault();
-
-    if (metadata != null)
-    {
-        IsChallengeMode = true;
-        ChallengeTitle = metadata.Element("Title")?.Value ?? "Unnamed Challenge";
-
-        foreach (var output in metadata.Elements("ExpectedOutput"))
-        {
-            if (int.TryParse(output.Attribute("id")?.Value, out int id))
-            {
-                var value = output.Attribute("value")?.Value ?? "0";
-                ExpectedOutputs[id] = value;
-            }
-        }
-    }
-}
 
 
     public void AddGate(int id, GateTypeEnum type, double x, double y)
@@ -326,23 +304,6 @@ public class PuzzleViewModel
         var (_, _, outputCards) = parser.parseCards();
         return outputCards.Select(o => (o.Id, o.Output)).ToList();
     }
-
-    public bool IsChallengeSolved()
-{
-    var actualOutputs = EvaluateOutputs(); // returns List<(int OutputCardId, bool Value)>
-
-    foreach (var expected in ExpectedOutputs)
-    {
-        var match = actualOutputs.FirstOrDefault(o => o.OutputCardId == expected.Key);
-        if (match == default) return false;
-
-        string actualValue = match.Value ? "1" : "0";
-        if (actualValue != expected.Value) return false;
-    }
-
-    return true;
-}
-
 
     public class CardData
     {

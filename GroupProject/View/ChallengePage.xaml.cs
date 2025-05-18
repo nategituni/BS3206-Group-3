@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Xml.Linq;
 using GroupProject.Model.LogicModel;
 using GroupProject.Model.Utilities;
@@ -9,7 +9,7 @@ using Microsoft.Maui.Layouts;
 
 namespace GroupProject.View;
 
-public partial class PuzzlePage : ContentPage
+public partial class ChallengePage : ContentPage
 {
     private readonly List<Connection> _connections = new();
 
@@ -30,13 +30,18 @@ public partial class PuzzlePage : ContentPage
     private BoxView? _wireOverlay;
     private int _wireSrcId;
     private double _wireStartX, _wireStartY;
+    private string _currentChallengeFilename;
 
-    public PuzzlePage()
+
+    public ChallengePage()
     {
         InitializeComponent();
 
         foreach (var g in Enum.GetValues<GateTypeEnum>())
         {
+            if (g is GateTypeEnum.Input or GateTypeEnum.Output)
+                continue;
+
             var button = new Button
             {
                 Text = g.ToString()
@@ -48,58 +53,131 @@ public partial class PuzzlePage : ContentPage
         SizeChanged += (_, _) => UpdateCanvasSize();
     }
 
-	protected override void OnAppearing()
-	{
-		base.OnAppearing();
-		BindingContext = new PuzzleViewModel();
-		LoadInitialCanvas();
-	}
-
-    private async void Save_Clicked(object sender, EventArgs e)
-	{
-		if (BindingContext is not PuzzleViewModel vm) return;
-
-		var userEmail = Preferences.Get("UserEmail", null);
-		if (string.IsNullOrEmpty(userEmail))
-		{
-			await DisplayAlert("Error", "User email not found. Please log in.", "OK");
-			return;
-		}
-
-		var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
-		var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
-
-		if (!string.IsNullOrWhiteSpace(userInput))
-			await vm.SaveAsync(userId, userInput);
-	}
-
-    private void Clear_Clicked(object s, EventArgs e)
+    protected override void OnAppearing()
     {
-        if (BindingContext is PuzzleViewModel vm)
-            vm.ClearState();
+        base.OnAppearing();
+        _currentChallengeFilename = ChallengeSession.CurrentFilename;
 
-        Canvas.Children.Clear();
-        _occupiedAreas.Clear();
-        _cardMap.Clear();
-        _connections.Clear();
-
-        DisplayAlert("State Cleared", "All cards and connections have been removed.", "OK");
+        BindingContext = new PuzzleViewModel();
+        LoadInitialCanvas();
     }
 
-    private CardView CreateCardView(int id, GateTypeEnum type, double x, double y, bool enableOutputTap)
+    private async void Save_Clicked(object sender, EventArgs e)
+    {
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
+
+        if (string.IsNullOrEmpty(_currentChallengeFilename))
+        {
+            await DisplayAlert("Error", "Challenge filename not set.", "OK");
+            return;
+        }
+            string statePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+            string challengePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Challenges", _currentChallengeFilename);
+
+
+        if (!File.Exists(statePath))
+        {
+            await DisplayAlert("Error", "State file not found.", "OK");
+            return;
+        }
+
+        // Simulate to get the output values
+        var (success, newCardMap) = vm.ReshuffleIds(_cardMap, _connections);
+        if (!success)
+        {
+            await DisplayAlert("Error", "Reshuffling failed. Please check your connections.", "OK");
+            return;
+        }
+
+        _cardMap = newCardMap;
+        var outputs = vm.EvaluateOutputs();
+
+        try
+        {
+            var doc = XDocument.Load(statePath);
+
+            // Check expected output correctness
+            var outputCards = doc.Descendants("OCard")
+                                .Where(o => o.Attribute("expectedValue") != null);
+
+            bool allMatched = true;
+
+            foreach (var oCard in outputCards)
+            {
+                if (!int.TryParse(oCard.Attribute("id")?.Value, out int outputId))
+                    continue;
+
+                bool expected = oCard.Attribute("expectedValue")?.Value == "1";
+                var actualMatch = outputs.FirstOrDefault(o => o.OutputCardId == outputId);
+                bool actual = actualMatch.Value;
+
+                if (actual != expected)
+                {
+                    allMatched = false;
+                    break;
+                }
+            }
+
+            // Ensure <ChallengeMetadata> exists
+            var metadata = doc.Root?.Element("ChallengeMetadata");
+            if (metadata == null)
+            {
+                metadata = new XElement("ChallengeMetadata");
+                doc.Root?.Add(metadata);
+            }
+
+            var completedElem = metadata.Element("IsCompleted");
+            if (completedElem == null)
+                metadata.Add(new XElement("IsCompleted", allMatched.ToString().ToLower()));
+            else
+                completedElem.Value = allMatched.ToString().ToLower();
+
+            // Save changes back to State.xml
+            doc.Save(statePath);
+
+            // Now copy it back to the challenge file
+            File.Copy(statePath, challengePath, overwrite: true);
+
+            await DisplayAlert("Saved", allMatched
+                ? "Challenge complete! State saved."
+                : "Output is incorrect, but state saved.", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Failed to save challenge: {ex.Message}", "OK");
+        }
+    }
+
+
+    private CardView CreateCardView(int id, GateTypeEnum type, double x, double y, bool enableOutputTap, bool isLocked)
     {
         if (BindingContext is not PuzzleViewModel pvm)
             throw new InvalidOperationException("BindingContext is not a PuzzleViewModel");
-        var vm = new CardViewModel(pvm.GetXmlStateService(), id, type)
+
+        // Determine initial input value for input cards
+        bool inputValue = false;
+        if (type == GateTypeEnum.Input)
         {
-            X = x,
-            Y = y
-        };
+            var xmlElement = pvm.GetXmlStateService().GetInputCardElementById(id);
+            if (xmlElement != null && bool.TryParse(xmlElement.Attribute("value")?.Value, out var parsedValue))
+                inputValue = parsedValue;
+        }
+
+        var vm = new CardViewModel(pvm.GetXmlStateService(), id, type, isLocked, x, y, inputValue);
 
         var cv = new CardView { BindingContext = vm };
 
-        cv.DeleteRequested += Card_DeleteRequested;
-        cv.PositionChanged += OnCardMoved;
+        if (!vm.IsLocked && (vm.GateType == GateTypeEnum.Input || vm.GateType == GateTypeEnum.Output))
+        {
+            cv.DeleteRequested -= Card_DeleteRequested;
+            cv.PositionChanged += OnCardMoved;
+        }
+        else
+        {
+            cv.DeleteRequested += Card_DeleteRequested;
+            cv.PositionChanged += OnCardMoved;
+        }
 
         if (enableOutputTap)
             cv.OutputPortTapped += OnOutTapped;
@@ -122,14 +200,17 @@ public partial class PuzzlePage : ContentPage
         return cv;
     }
 
+
     private void BuildConnectionLine(int fromId, int toId, int inputIndex, Point start, Point end)
     {
         var connectionWire = new Line
         {
             Stroke = new SolidColorBrush(Colors.White),
             StrokeThickness = 2,
-            X1 = start.X, Y1 = start.Y,
-            X2 = end.X, Y2 = end.Y,
+            X1 = start.X,
+            Y1 = start.Y,
+            X2 = end.X,
+            Y2 = end.Y,
             InputTransparent = true
         };
 
@@ -185,37 +266,29 @@ public partial class PuzzlePage : ContentPage
 
     private void Simulate_Clicked(object s, EventArgs e)
     {
-        try
+        if (BindingContext is not PuzzleViewModel vm)
+            return;
+
+        var (success, newCardMap) = vm.ReshuffleIds(_cardMap, _connections);
+        if (!success)
         {
-            if (BindingContext is not PuzzleViewModel vm)
-                return;
+            DisplayAlert("Error", "Reshuffling failed. Please check your connections.", "OK");
+            return;
+        }
 
-            var (success, newCardMap) = vm.ReshuffleIds(_cardMap, _connections);
-            if (!success)
+        _cardMap = newCardMap;
+        var outputs = vm.EvaluateOutputs();
+
+        foreach (var child in Canvas.Children)
+        {
+            if (child is CardView cardView && cardView.BindingContext is CardViewModel viewModel)
             {
-                DisplayAlert("Error", "Reshuffling failed. Please check your connections.", "OK");
-                return;
-            }
-
-            _cardMap = newCardMap;
-
-            var outputs = vm.EvaluateOutputs(); // <-- CRASH LIKELY HERE
-
-            foreach (var child in Canvas.Children)
-            {
-                if (child is CardView cardView && cardView.BindingContext is CardViewModel viewModel)
+                if (viewModel.GateType == GateTypeEnum.Output)
                 {
-                    if (viewModel.GateType == GateTypeEnum.Output)
-                    {
-                        var match = outputs.FirstOrDefault(o => o.OutputCardId == viewModel.Id);
-                        cardView.OutputValueLabel.Text = match != default ? (match.Value ? "1" : "0") : "";
-                    }
+                    var match = outputs.FirstOrDefault(o => o.OutputCardId == viewModel.Id);
+                    cardView.OutputValueLabel.Text = match != default ? (match.Value ? "1" : "0") : "";
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            DisplayAlert("Simulation Error", ex.ToString(), "OK");
         }
     }
 
@@ -233,7 +306,7 @@ public partial class PuzzlePage : ContentPage
         var position = GetNearestFreeSpot(spawnStart, new Size(120, 80));
 
         // Create and place the card
-        CreateCardView(id, gateType, position.X, position.Y, gateType != GateTypeEnum.Output);
+        CreateCardView(id, gateType, position.X, position.Y, gateType != GateTypeEnum.Output, false);
 
         // Add to XML
         vm.AddGate(id, gateType, position.X, position.Y);
@@ -341,19 +414,19 @@ public partial class PuzzlePage : ContentPage
         double bestDist2 = double.MaxValue;
 
         for (double dx = 0; dx <= radius; dx += step)
-        for (double dy = 0; dy <= radius; dy += step)
-        {
-            var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
-            if (!IsOverlapping(r))
+            for (double dy = 0; dy <= radius; dy += step)
             {
-                double d2 = dx * dx + dy * dy;
-                if (d2 < bestDist2)
+                var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
+                if (!IsOverlapping(r))
                 {
-                    bestDist2 = d2;
-                    best = new Point(center.X + dx, center.Y + dy);
+                    double d2 = dx * dx + dy * dy;
+                    if (d2 < bestDist2)
+                    {
+                        bestDist2 = d2;
+                        best = new Point(center.X + dx, center.Y + dy);
+                    }
                 }
             }
-        }
 
         return best;
     }
@@ -392,24 +465,24 @@ public partial class PuzzlePage : ContentPage
             var y = coords[1];
 
             for (int dX = -1; dX <= 1; dX++)
-            for (int dY = -1; dY <= 1; dY++)
-            {
-                var newKey = MathHelper.LongHash(x + dX, y + dY);
-                if (_occupiedAreas.TryGetValue(newKey, out var set))
+                for (int dY = -1; dY <= 1; dY++)
                 {
-                    foreach (var id in set)
+                    var newKey = MathHelper.LongHash(x + dX, y + dY);
+                    if (_occupiedAreas.TryGetValue(newKey, out var set))
                     {
-                        var cv = _cardMap[id];
-                        var bounds = AbsoluteLayout.GetLayoutBounds(cv);
-                        var existingRect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
-                        if (expandedCandidateRect.IntersectsWith(existingRect))
+                        foreach (var id in set)
                         {
-                            intersects = true;
-                            return;
+                            var cv = _cardMap[id];
+                            var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+                            var existingRect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+                            if (expandedCandidateRect.IntersectsWith(existingRect))
+                            {
+                                intersects = true;
+                                return;
+                            }
                         }
                     }
                 }
-            }
         });
 
         return intersects;
@@ -644,22 +717,22 @@ public partial class PuzzlePage : ContentPage
         };
 
         deleteButton.Clicked += (_, _) =>
-		{
-			// Remove connection from XML
-			if (BindingContext is PuzzleViewModel vm)
-				vm.GetXmlStateService().SetCardInput(connection.TargetCardId, connection.TargetInputIndex, 0);
-	
-			// Remove connection's visual elements.
-			if (Canvas.Children.Contains(connection.LineShape))
-				Canvas.Children.Remove(connection.LineShape);
+        {
+            // Remove connection from XML
+            if (BindingContext is PuzzleViewModel vm)
+                vm.GetXmlStateService().SetCardInput(connection.TargetCardId, connection.TargetInputIndex, 0);
 
-			if (Canvas.Children.Contains(connection.HitArea))
-				Canvas.Children.Remove(connection.HitArea);
+            // Remove connection's visual elements.
+            if (Canvas.Children.Contains(connection.LineShape))
+                Canvas.Children.Remove(connection.LineShape);
 
-			if (Canvas.Children.Contains(deleteButton))
-				Canvas.Children.Remove(deleteButton);
+            if (Canvas.Children.Contains(connection.HitArea))
+                Canvas.Children.Remove(connection.HitArea);
 
-			_connections.Remove(connection);
+            if (Canvas.Children.Contains(deleteButton))
+                Canvas.Children.Remove(deleteButton);
+
+            _connections.Remove(connection);
         };
 
         // Position the delete button at the center of the line.
@@ -744,7 +817,9 @@ public partial class PuzzlePage : ContentPage
                 type: card.GateType,
                 x: card.X,
                 y: card.Y,
-                enableOutputTap: card.GateType != GateTypeEnum.Output
+                enableOutputTap: card.GateType != GateTypeEnum.Output,
+                isLocked: card.IsLocked
+
             );
         }
 
@@ -754,6 +829,9 @@ public partial class PuzzlePage : ContentPage
         {
             RestoreConnection(conn.FromId, conn.ToId, conn.TargetInputIndex);
         }
+
+        
+
 
         UpdateCanvasSize();
     }
@@ -768,8 +846,10 @@ public partial class PuzzlePage : ContentPage
         {
             Stroke = new SolidColorBrush(Colors.White),
             StrokeThickness = 2,
-            X1 = startPoint.X, Y1 = startPoint.Y,
-            X2 = startPoint.X, Y2 = startPoint.Y,
+            X1 = startPoint.X,
+            Y1 = startPoint.Y,
+            X2 = startPoint.X,
+            Y2 = startPoint.Y,
             InputTransparent = true
         };
         Canvas.Children.Add(_tempWire);
@@ -799,4 +879,6 @@ public partial class PuzzlePage : ContentPage
 
         _isDrawingWire = true;
     }
+
+
 }
