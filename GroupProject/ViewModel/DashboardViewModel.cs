@@ -9,6 +9,7 @@ namespace GroupProject.ViewModel
 		public ICommand GoToSandboxCommand { get; }
 		public ICommand GoToTrendingCommand { get; }
 		public ICommand GoToLearnerCommand { get; }
+		public ICommand GoToChallengesCommand { get; }
 
 		public DashboardViewModel()
 		{
@@ -17,6 +18,7 @@ namespace GroupProject.ViewModel
 			GoToSandboxCommand = new Command(async () => await GoToSandboxPageAsync());
 			GoToTrendingCommand = new Command(async () => await GoToTrendingPageAsync());
 			GoToLearnerCommand = new Command(async () => await GoToLearnerPageAsync());
+			GoToChallengesCommand = new Command(async () => await GoToChallengesPageAsync());
 		}
 
 		private async Task GoToAccountPageAsync()
@@ -44,6 +46,11 @@ namespace GroupProject.ViewModel
 		private async Task GoToLearnerPageAsync()
 		{
 			await Shell.Current.GoToAsync("///LearnerPage");
+		}
+
+		private async Task GoToChallengesPageAsync()
+		{
+			await Shell.Current.GoToAsync("///ChallengesPage");
 		}
 
     }
