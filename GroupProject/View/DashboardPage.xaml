@@ -15,6 +15,7 @@
 			<Grid.RowDefinitions>
 				<RowDefinition Height="*" />
 				<RowDefinition Height="*" />
+        <RowDefinition Height="*" />
 				<RowDefinition Height="Auto" />
 			</Grid.RowDefinitions>
 
@@ -36,7 +37,10 @@
 			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
 
-			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+			<Button Text="Challenges" Command="{Binding GoToChallengesCommand}" Margin="30" Grid.Row="2" Grid.Column="0"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="ChallengesPageBtn"/>
+
+			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
 					 HorizontalOptions="FillAndExpand"/>
 		</Grid>
 

@@ -263,4 +263,11 @@ public class XmlStateService
     {
         Console.WriteLine(_doc.ToString());
     }
+    public XElement? GetInputCardElementById(int id)
+    {
+        return _doc.Descendants("InputCards")
+                .Elements("ICard")
+                .FirstOrDefault(x => (int)x.Attribute("id") == id);
+    }
+
 }

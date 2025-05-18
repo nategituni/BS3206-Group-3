@@ -3,11 +3,20 @@
 <ContentView
     x:Class="GroupProject.View.CardView"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:GroupProject.Model.LogicModel">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <local:BoolToBinaryConverter x:Key="BoolToBinaryConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
 
     <ContentView.GestureRecognizers>
         <TapGestureRecognizer Tapped="OnCardTapped" NumberOfTapsRequired="1" />
     </ContentView.GestureRecognizers>
+
+
 
     <AbsoluteLayout>
 
@@ -44,7 +53,7 @@
 
                 <Label
                     x:Name="OutputValueLabel"
-                    Text="{Binding CurrentValue}"
+                    Text="{Binding CurrentValue, Converter={StaticResource BoolToBinaryConverter}}"
                     x:FieldModifier="public"
                     TextColor="Black"
                     HorizontalOptions="Center"
@@ -67,11 +76,11 @@
 
                     <!-- Input value label -->
                     <Label x:Name="InputValueLabel"
-                           Text="0"
-                           HorizontalOptions="Center"
-                           Grid.ColumnSpan="3"
-                           TextColor="Black"
-                           IsVisible="False">
+                        Text="{Binding InputValue, Converter={StaticResource BoolToBinaryConverter}}"
+                        HorizontalOptions="Center"
+                        Grid.ColumnSpan="3"
+                        TextColor="Black"
+                        IsVisible="False">
                         <Label.Triggers>
                             <DataTrigger TargetType="Label" Binding="{Binding GateType}" Value="Input">
                                 <Setter Property="IsVisible" Value="True" />
@@ -79,18 +88,28 @@
                         </Label.Triggers>
                     </Label>
 
+
+
                     <!-- Input card picker -->
                     <Switch x:Name="InputValueSwitch"
-                            Toggled="OnInputValueToggled"
-                            HorizontalOptions="Center"
-                            Grid.ColumnSpan="3"
-                            IsVisible="False">
-                        <Switch.Triggers>
-                            <DataTrigger TargetType="Switch" Binding="{Binding GateType}" Value="Input">
-                                <Setter Property="IsVisible" Value="True" />
-                            </DataTrigger>
-                        </Switch.Triggers>
-                    </Switch>
+                        Toggled="OnInputValueToggled"
+                        HorizontalOptions="Center"
+                        Grid.ColumnSpan="3"
+                        IsVisible="False"
+                        HeightRequest="0">
+                    <Switch.Triggers>
+                        <!-- Show the switch if it's an input card and not locked -->
+                        <MultiTrigger TargetType="Switch">
+                            <MultiTrigger.Conditions>
+                                <BindingCondition Binding="{Binding GateType}" Value="Input" />
+                                <BindingCondition Binding="{Binding IsLocked}" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="IsVisible" Value="True" />
+                            <Setter Property="HeightRequest" Value="30" />
+                        </MultiTrigger>
+                    </Switch.Triggers>
+                </Switch>
+
 
                 </StackLayout>
 

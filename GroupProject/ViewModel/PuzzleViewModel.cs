@@ -10,6 +10,9 @@ public class PuzzleViewModel
 {
     private readonly string _statePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
     private readonly XmlStateService _xmlService;
+    
+    public string? CurrentChallengeFilename { get; set; }
+
 
     public PuzzleViewModel()
     {
@@ -36,7 +39,8 @@ public class PuzzleViewModel
             Id = XmlHelper.GetAttrInt(e, "id"),
             GateType = GateTypeEnum.Input,
             X = XmlHelper.GetAttrDouble(e, "xPos"),
-            Y = XmlHelper.GetAttrDouble(e, "yPos")
+            Y = XmlHelper.GetAttrDouble(e, "yPos"),
+            IsLocked = XmlHelper.GetAttrBool(e, "locked")
         }));
 
         cards.AddRange(doc.Descendants("OutputCards").Elements("OCard").Select(e => new CardData
@@ -44,7 +48,8 @@ public class PuzzleViewModel
             Id = XmlHelper.GetAttrInt(e, "id"),
             GateType = GateTypeEnum.Output,
             X = XmlHelper.GetAttrDouble(e, "xPos"),
-            Y = XmlHelper.GetAttrDouble(e, "yPos")
+            Y = XmlHelper.GetAttrDouble(e, "yPos"),
+            IsLocked = XmlHelper.GetAttrBool(e, "locked")
         }));
 
         cards.AddRange(doc.Descendants("LogicGateCards").Elements("LogicGate").Select(e =>
@@ -306,6 +311,7 @@ public class PuzzleViewModel
         public GateTypeEnum GateType { get; set; }
         public double X { get; set; }
         public double Y { get; set; }
+        public bool IsLocked { get; set; }
     }
 
     public class ConnectionData

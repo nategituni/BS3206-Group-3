@@ -7,6 +7,7 @@ namespace GroupProject.View;
 public partial class CardView : ContentView
 {
     private double _startX, _startY;
+    private bool IsLocked => BindingContext is CardViewModel vm && vm.IsLocked;
 
     public CardView()
     {
@@ -28,19 +29,22 @@ public partial class CardView : ContentView
     public event EventHandler? DeleteRequested;
 
     private async void OnCardTapped(object sender, EventArgs e)
+{
+    if (IsLocked) return;
+
+    // Bring to front
+    if (Parent is Layout layout)
     {
-        if (Parent is Layout layout)
-        {
-            layout.Children.Remove(this);
-            layout.Children.Add(this);
-        }
-
-        DeleteButton.IsVisible = true;
-
-        await Task.Delay(1000);
-
-        DeleteButton.IsVisible = false;
+        layout.Children.Remove(this);
+        layout.Children.Add(this);
     }
+
+    DeleteButton.IsVisible = true;
+    await Task.Delay(1000);
+    DeleteButton.IsVisible = false;
+}
+
+
 
     private void OnInputValueToggled(object sender, ToggledEventArgs e)
     {
@@ -53,12 +57,14 @@ public partial class CardView : ContentView
 
     private void OnDeleteButtonClicked(object sender, EventArgs e)
     {
+        if (IsLocked) return; // Don't delete if locked
+
         DeleteRequested?.Invoke(this, EventArgs.Empty);
 
-        // Retrieve the view model from the BindingContext
         if (BindingContext is CardViewModel viewModel)
             viewModel.Delete();
     }
+
 
     // Drag the card by panning the frame
     private void OnPanUpdated(object sender, PanUpdatedEventArgs e)

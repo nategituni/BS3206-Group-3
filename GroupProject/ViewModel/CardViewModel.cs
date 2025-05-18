@@ -13,6 +13,12 @@ public class CardViewModel : INotifyPropertyChanged
 
     private string? _currentValue;
     public string DisplayName => $"{GateType}";
+    public bool IsLocked { get; }
+    public bool ExpectedValue { get; set; }
+    private bool _inputValue;
+
+
+
 
     public string? CurrentValue
     {
@@ -25,6 +31,20 @@ public class CardViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+   public bool InputValue
+{
+    get => _inputValue;
+    set
+    {
+        if (_inputValue == value) return;
+        _inputValue = value;
+        OnPropertyChanged();
+
+        // Update XML state
+        UpdateInputCardValue(_inputValue);
+    }
+}
 
     private double _x, _y;
 
@@ -48,17 +68,21 @@ public class CardViewModel : INotifyPropertyChanged
         }
     }
 
-    public CardViewModel(XmlStateService xmlService, int id, GateTypeEnum gateType, double startX = 50,
-        double startY = 50)
+    public CardViewModel(XmlStateService xmlService, int id, GateTypeEnum gateType, bool isLocked = false, double startX = 50, double startY = 50, bool inputValue = false)
     {
         Id = id;
         GateType = gateType;
         X = startX;
         Y = startY;
         _xmlService = xmlService;
+        IsLocked = isLocked;
 
         CurrentValue = gateType == GateTypeEnum.Output ? "0" : string.Empty;
+
+        if (gateType == GateTypeEnum.Input)
+        InputValue = inputValue;
     }
+
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -68,20 +92,23 @@ public class CardViewModel : INotifyPropertyChanged
     }
 
     public void Delete()
+{
+    if (IsLocked) return;
+
+    switch (GateType)
     {
-        switch (GateType)
-        {
-            case GateTypeEnum.Input:
-                _xmlService.DeleteInputCard(Id);
-                break;
-            case GateTypeEnum.Output:
-                _xmlService.DeleteOutputCard(Id);
-                break;
-            default:
-                _xmlService.DeleteLogicGateCard(Id);
-                break;
-        }
+        case GateTypeEnum.Input:
+            _xmlService.DeleteInputCard(Id);
+            break;
+        case GateTypeEnum.Output:
+            _xmlService.DeleteOutputCard(Id);
+            break;
+        default:
+            _xmlService.DeleteLogicGateCard(Id);
+            break;
     }
+}
+
 
     public void UpdateInputCardValue(bool value)
     {

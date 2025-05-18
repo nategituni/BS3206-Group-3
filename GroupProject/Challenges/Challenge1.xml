@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<State>
+  <InputCards>
+    <ICard id="2" value="true" xPos="50" yPos="140" locked="true"/>
+    <ICard id="3" value="true" xPos="54.02740478515625" yPos="241.01731872558594" locked="true"/>
+  </InputCards>
+  <LogicGateCards>
+    
+  </LogicGateCards>
+  <OutputCards>
+    <OCard id="4" input1="0" xPos="496.0464172363281" yPos="179.00473022460938" locked="true" expectedValue="1"/>
+  </OutputCards>
+  <ChallengeMetadata>
+  </ChallengeMetadata>
+</State>

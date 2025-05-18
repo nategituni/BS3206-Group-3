@@ -12,4 +12,11 @@ public static class XmlHelper
 
     public static string GetAttrString(XElement element, string attrName, string defaultValue = "")
         => element.Attribute(attrName)?.Value ?? defaultValue;
+    
+    public static bool GetAttrBool(XElement element, string attrName)
+    {
+        var attr = element.Attribute(attrName);
+        return attr != null && bool.TryParse(attr.Value, out var result) && result;
+    }
+
 }

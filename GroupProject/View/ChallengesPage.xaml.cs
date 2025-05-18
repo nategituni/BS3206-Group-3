@@ -2,19 +2,32 @@ using System;
 using GroupProject.ViewModel;
 using Microsoft.Maui.Controls;
 using GroupProject.Model;
-//placeholder
+using GroupProject.Services;
+
 namespace GroupProject.View
 {
     public partial class ChallengesPage : ContentPage
     {
+        
+
         public ChallengesPage()
         {
             InitializeComponent();
             BindingContext = new ChallengesViewModel();
 
         }
+        
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
 
-        private void OnChallengeSelected(object sender, SelectionChangedEventArgs e)
+            if (BindingContext is ChallengesViewModel vm)
+            {
+                vm.LoadChallengesFromFiles(); // Refresh on return
+            }
+        }
+
+        private async void OnChallengeSelected(object sender, SelectionChangedEventArgs e)
         {
             if (e.CurrentSelection.Count == 0)
                 return;
@@ -23,11 +36,24 @@ namespace GroupProject.View
             if (selected == null)
                 return;
 
-            // Example navigation or popup
-            DisplayAlert("Challenge Selected", $"You selected: {selected.Name}", "OK");
+            try
+            {
+                var service = new ChallengeService();
+                service.LoadChallenge(selected.Filename);
 
-            // Optionally clear selection
+                ChallengeSession.CurrentFilename = selected.Filename;
+                await Shell.Current.GoToAsync($"///ChallengePage");
+
+
+
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Failed to load challenge: {ex.Message}", "OK");
+            }
+
             ((CollectionView)sender).SelectedItem = null;
         }
+
     }
 }
