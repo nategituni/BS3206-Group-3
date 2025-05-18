@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using Microsoft.Maui.Controls;
-//placeholder
 namespace GroupProject.Model.LogicModel
 {
     public class BoolToColourConverter : IValueConverter

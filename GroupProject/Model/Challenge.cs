@@ -1,5 +1,5 @@
 namespace GroupProject.Model
-//placeholder
+
 {
     public class Challenge
     {
