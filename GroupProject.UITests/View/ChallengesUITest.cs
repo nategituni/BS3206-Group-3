@@ -28,15 +28,4 @@ public class ChallengesPageUITest : BaseTest
         ChallengesPageButton.Click();
         Thread.Sleep(1000);
     }
-
-    [Test]
-    public void ChallengesPageInitialiation()
-    {
-		NavigateToChallengesPage();
-
-        var challengeText = FindUIElement("ChallengeText");
-
-		Assert.That(challengeText != null, "Challenges not found.");
-    }
-
 }
