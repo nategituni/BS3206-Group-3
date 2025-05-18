@@ -6,8 +6,7 @@
 
     <Grid>
         <!-- Background Image -->
-        <Image Source="background.png"
-               Aspect="AspectFill" />
+        <Image Source="background.png" Aspect="AspectFill" />
 
         <!-- Light Grey Register Card -->
         <Frame VerticalOptions="Center"
@@ -24,21 +23,11 @@
                        TextColor="Black"
                        HorizontalOptions="Center" />
 
-                <Entry Placeholder="Full Name"
-                       Text="{Binding FullName}" />
+                <Entry Placeholder="Full Name" Text="{Binding FullName}" />
+                <Entry Placeholder="Email" Text="{Binding Email}" />
+                <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+                <Entry Placeholder="Confirm Password" Text="{Binding ConfirmPassword}" IsPassword="True" />
 
-                <Entry Placeholder="Email"
-                       Text="{Binding Email}" />
-
-                <Entry Placeholder="Password"
-                       Text="{Binding Password}"
-                       IsPassword="True" />
-
-                <Entry Placeholder="Confirm Password"
-                       Text="{Binding ConfirmPassword}"
-                       IsPassword="True" />
-
-                <!-- Password Requirements -->
                 <Label Text="Password must be at least 7 characters and include:
 - Uppercase letter
 - Lowercase letter
@@ -51,14 +40,32 @@
                        TextColor="Red"
                        HorizontalOptions="Center" />
 
+                <!-- Register Button with visual feedback -->
                 <Button Text="Register"
                         Command="{Binding RegisterCommand}"
                         IsEnabled="{Binding IsRegisterEnabled}"
-                        BackgroundColor="#4F46E5"
-                        TextColor="White"
-                        CornerRadius="8" />
+                        CornerRadius="8">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroupList>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#4F46E5" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#B0B0B0" />
+                                        <Setter Property="TextColor" Value="#EEEEEE" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateGroupList>
+                    </VisualStateManager.VisualStateGroups>
+                </Button>
 
-                <!-- MFA Code Entry -->
+                <!-- MFA Entry -->
                 <Entry Placeholder="Enter MFA Code"
                        Text="{Binding MfaCode}"
                        IsVisible="{Binding IsMfaVisible}" />
@@ -69,13 +76,12 @@
                         IsVisible="{Binding IsMfaVisible}"
                         BackgroundColor="#4F46E5"
                         TextColor="White"
-                        CornerRadius="8"/>
+                        CornerRadius="8" />
 
                 <Button Text="Back to Login"
                         Command="{Binding GoToLoginCommand}"
                         BackgroundColor="Transparent"
                         TextColor="Black" />
-
             </VerticalStackLayout>
         </Frame>
     </Grid>
