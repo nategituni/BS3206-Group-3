@@ -52,6 +52,5 @@ namespace GroupProject.ViewModel
 		{
 			await Shell.Current.GoToAsync("///ChallengesPage");
 		}
-
     }
 }
