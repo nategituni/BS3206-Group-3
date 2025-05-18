@@ -8,11 +8,11 @@ public class ChallengesPageUITest : BaseTest
     {
         var emailEntry = FindUIElement("LoginEmailEntryField");
         var passwordEntry = FindUIElement("LoginPasswordEntryField");
-        var loginButton = FindUIELement("LoginBtn");
+        var loginButton = FindUIElement("LoginBtn");
 
         emailEntry.Click();
         emailEntry.SendKeys("michael.eddleston@icloud.com");
-        Thread.Sleep(1000)
+		Thread.Sleep(1000);
 
         passwordEntry.Click();
         passwordEntry.SendKeys("Password1!");
@@ -32,11 +32,11 @@ public class ChallengesPageUITest : BaseTest
     [Test]
     public void ChallengesPageInitialiation()
     {
-        NavigateToChallengesPage()
+		NavigateToChallengesPage();
 
-        var challengeText = findUIElement("ChallengeText");
+        var challengeText = FindUIElement("ChallengeText");
 
-        Assert.That(challengeText != null, "Challenges not found.")
+		Assert.That(challengeText != null, "Challenges not found.");
     }
 
 }
