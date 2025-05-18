@@ -36,10 +36,7 @@
 			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
 
-			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="0"
-					 HorizontalOptions="FillAndExpand"/>
-
-			<Button Text="Challenge" Command="{Binding GoToChallengeCommand}" Margin="30" Grid.Row="2" Grid.Column="1"
+			<Button Text="Logout" Command="{Binding GoToLogoutCommand}" Margin="30" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
 					 HorizontalOptions="FillAndExpand"/>
 		</Grid>
 
