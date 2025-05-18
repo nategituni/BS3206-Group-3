@@ -1,7 +1,7 @@
 namespace GroupProject.Tests.Model.LogicModel
 {
 	using GroupProject.Model.LogicModel;
-	
+
 	public class LogicGateCardTest
 	{
 		[Theory]
@@ -23,7 +23,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			andGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, andGate.Output);		
+			Assert.Equal(expectedOutput, andGate.Output);
 		}
 
 		[Theory]
@@ -45,7 +45,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			orGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, orGate.Output);		
+			Assert.Equal(expectedOutput, orGate.Output);
 		}
 
 		[Theory]
@@ -64,7 +64,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			notGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, notGate.Output);		
+			Assert.Equal(expectedOutput, notGate.Output);
 		}
 
 		[Theory]
@@ -86,7 +86,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			xorGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, xorGate.Output);		
+			Assert.Equal(expectedOutput, xorGate.Output);
 		}
 
 		[Theory]
@@ -108,7 +108,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			nandGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, nandGate.Output);		
+			Assert.Equal(expectedOutput, nandGate.Output);
 		}
 
 		[Theory]
@@ -130,7 +130,7 @@ namespace GroupProject.Tests.Model.LogicModel
 			norGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, norGate.Output);		
+			Assert.Equal(expectedOutput, norGate.Output);
 		}
 
 		[Theory]
@@ -152,7 +152,33 @@ namespace GroupProject.Tests.Model.LogicModel
 			xnorGate.CalculateOutput();
 
 			// Assert
-			Assert.Equal(expectedOutput, xnorGate.Output);		
+			Assert.Equal(expectedOutput, xnorGate.Output);
+		}
+
+		[Fact]
+		public void TestGateTypeEnum()
+		{
+			// Arrange
+			var gateCard = new LogicGateCard(GateTypeEnum.And);
+
+			// Act
+			var gateType = gateCard.GateType;
+
+			// Assert
+			Assert.Equal(GateTypeEnum.And, gateType);
+		}
+
+		[Fact]
+		public void TestGateTypeString()
+		{
+			// Arrange
+			var gateCard = new LogicGateCard("AND");
+
+			// Act
+			var gateType = gateCard.GateType;
+
+			// Assert
+			Assert.Equal(GateTypeEnum.And, gateType);
 		}
 	}
 }

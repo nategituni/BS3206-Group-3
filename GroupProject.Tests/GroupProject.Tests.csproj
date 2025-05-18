@@ -23,4 +23,8 @@
 	<ProjectReference Include="..\GroupProject\GroupProject.csproj" />
   </ItemGroup>
 
+<ItemGroup>
+	<None Include="Resource/State/TestState.xml" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+</ItemGroup>
+
 </Project>

@@ -4,6 +4,8 @@ using System.Xml.Linq;
 using GroupProject.Model.LogicModel;
 public class StateParserTest
 {
+	string testfilepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestState.xml");
+
 	[Fact]
 	public void TestParseCards()
 	{
@@ -21,10 +23,10 @@ public class StateParserTest
 
 		// Arrange
 		var stateParser = new StateParser(mockDoc);
-		
+
 		// Act
 		var (inputCards, logicGateCards, outputCards) = stateParser.parseCards();
-		
+
 		// Assert
 		Assert.NotNull(inputCards);
 		Assert.NotNull(logicGateCards);
@@ -91,4 +93,100 @@ public class StateParserTest
 		Assert.Equal(expectedSum1, outputCards[1].Output);
 		Assert.Equal(expectedSum0, outputCards[2].Output);
 	}
+
+	[Fact]
+	public void TestParseCardsWithEmptyXml()
+	{
+		string testXml = @"<Root></Root>";
+
+		XDocument mockDoc = XDocument.Parse(testXml);
+
+		// Arrange
+		var stateParser = new StateParser(mockDoc);
+
+		// Act
+		var (inputCards, logicGateCards, outputCards) = stateParser.parseCards();
+
+		// Assert
+		Assert.Empty(inputCards);
+		Assert.Empty(logicGateCards);
+		Assert.Empty(outputCards);
+	}
+
+    [Fact]
+    public void TestSaveCards()
+    {
+        // Arrange
+        string testXml = @"<State></State>";
+        XDocument mockDoc = XDocument.Parse(testXml);
+
+        string testfilepath = Path.Combine(Path.GetTempPath(), "TestSaveCardsOutput.xml");
+
+        var expectedXml = @"
+			<State>
+				<ICard id='1' value='true'/>
+				<ICard id='2' value='false'/>
+				<LogicGate id='1' gateType='And' input1='1' input2='2'/>
+				<OutputCards>
+					<OCard id='4' input1='1'/>
+				</OutputCards>
+			</State>";
+
+        var stateParser = new StateParser(mockDoc);
+
+        var inputCards = new List<IOCard>
+        {
+            new IOCard { Id = 1 },
+            new IOCard { Id = 2 }
+        };
+
+        inputCards[0].SetValue(true);
+        inputCards[1].SetValue(false);
+
+        var logicGateCards = new List<LogicGateCard>
+        {
+            new LogicGateCard("And")
+            {
+                Id = 3,
+                Input1Card = inputCards[0],
+                Input2Card = inputCards[1]
+            }
+        };
+
+        var outputCards = new List<OutputCard>
+        {
+            new OutputCard
+            {
+                Id = 4,
+                Input1Card = logicGateCards[0]
+            }
+        };
+
+        // Act
+        stateParser.SaveCards(testfilepath, inputCards, logicGateCards, outputCards);
+        XDocument savedDoc = XDocument.Load(testfilepath);
+
+        // Normalize both expected and saved XML
+        string normalizedExpected = XDocument.Parse(expectedXml)
+            .Root.ToString(SaveOptions.DisableFormatting)
+            .Replace("\"", "'")
+            .Replace("\r", "")
+            .Replace("\n", "")
+            .Replace(" ", "");
+
+        string normalizedSaved = savedDoc.Root.ToString(SaveOptions.DisableFormatting)
+            .Replace("\"", "'")
+            .Replace("\r", "")
+            .Replace("\n", "")
+            .Replace(" ", "");
+
+        // Assert
+        Assert.Equal(normalizedExpected, normalizedSaved);
+        
+        // Cleanup
+        if (File.Exists(testfilepath))
+        {
+            File.Delete(testfilepath);
+        }
+    }
 }
