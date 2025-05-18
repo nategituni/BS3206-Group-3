@@ -33,7 +33,7 @@
                         <Label Text="{Binding Name}" 
                             FontAttributes="Bold" 
                             FontSize="18"
-                            TextColor="{AppThemeBinding Light='Black', Dark='White'}" />
+                            TextColor="{AppThemeBinding Light='Black', Dark='White'}"/>
 
                         <Label Text="{Binding Difficulty}"
                             FontSize="14"

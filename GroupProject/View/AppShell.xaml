@@ -42,8 +42,9 @@
         ContentTemplate="{DataTemplate local:ChallengesPage}"
         Route="ChallengesPage" />
 
-	<ShellContent
-		Title="Challenge"
-		ContentTemplate="{DataTemplate local:ChallengePage}"
-		Route="ChallengePage" />
+    <ShellContent
+        Title="Challenge"
+        ContentTemplate="{DataTemplate local:ChallengePage}" 
+        Route="ChallengePage"/>
+  
 </Shell>
