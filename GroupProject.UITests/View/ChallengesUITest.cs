@@ -4,28 +4,29 @@ namespace GroupProject.UITests.View;
 
 public class ChallengesPageUITest : BaseTest
 {
-    public void NavigateToChallengesPage()
-    {
-        var emailEntry = FindUIElement("LoginEmailEntryField");
-        var passwordEntry = FindUIElement("LoginPasswordEntryField");
-        var loginButton = FindUIElement("LoginBtn");
+	public void NavigateToChallengesPage()
+	{
 
-        emailEntry.Click();
-        emailEntry.SendKeys("michael.eddleston@icloud.com");
+		var emailEntry = FindUIElement("LoginEmailEntryField");
+		var passwordEntry = FindUIElement("LoginPasswordEntryField");
+		var loginButton = FindUIElement("LoginBtn");
+
+		emailEntry.Click();
+		emailEntry.SendKeys("michael.eddleston@icloud.com");
 		Thread.Sleep(1000);
 
-        passwordEntry.Click();
-        passwordEntry.SendKeys("Password1!");
-        Thread.Sleep(1000);
+		passwordEntry.Click();
+		passwordEntry.SendKeys("Password1!");
+		Thread.Sleep(1000);
 
-        loginButton.Click();
-        Thread.Sleep(1000);
+		loginButton.Click();
+		Thread.Sleep(1000);
 
-        var ChallengesPageButton = FindUIElement("ChallengesPageBtn");
+		var ChallengesPageButton = FindUIElement("ChallengesPageBtn");
 
-        Assert.That(ChallengesPageButton != null, "Challenges Page button not found.");
+		Assert.That(ChallengesPageButton != null, "Challenges Page button not found.");
 
-        ChallengesPageButton.Click();
-        Thread.Sleep(1000);
+		ChallengesPageButton.Click();
+		Thread.Sleep(1000);
     }
 }

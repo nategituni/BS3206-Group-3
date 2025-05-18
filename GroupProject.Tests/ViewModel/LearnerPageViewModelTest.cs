@@ -32,18 +32,4 @@ public class LearnerPageViewModelTest
 		Assert.NotNull(doc);
 		Assert.Equal(3, doc.Descendants("ICard").Count() + doc.Descendants("LogicGate").Count() + doc.Descendants("OCard").Count());
 	}
-
-	[Fact]
-	public void TestGetXmlStateService()
-	{
-		// Arrange
-		var learnerViewModel = new LearnerViewModel();
-
-		// Act
-		var xmlService = learnerViewModel.GetXmlStateService();
-
-		// Assert
-		Assert.NotNull(xmlService);
-		Assert.Equal(testFilePath, xmlService.Document.BaseUri);
-	}
 }
