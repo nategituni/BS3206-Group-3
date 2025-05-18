@@ -6,7 +6,7 @@ namespace GroupProject.Services
 {
     public static class EmailService
     {
-        private const string SendGridApiKey = "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";
+        private const string SendGridApiKey = "Please add your SendGrid API key here";
 
         public static async Task<bool> SendMfaCodeEmailAsync(string recipientEmail, string code)
         {

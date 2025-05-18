@@ -166,7 +166,7 @@ namespace GroupProject.ViewModel
                 }
                 else
                 {
-                    StatusMessage = "Failed to send verification code.";
+                    StatusMessage = "Verification service offline, please ask provider to update API.";
                 }
             }
             else
