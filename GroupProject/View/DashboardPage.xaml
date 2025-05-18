@@ -42,11 +42,13 @@
 
         <!-- Right Side: Embedded TrendingPage -->
         <Border Grid.Column="1">
+			<ScrollView>
 			<ContentView>
 				<ContentView.Content>
 					<local:TrendingPage />
 				</ContentView.Content>
 			</ContentView>
+			</ScrollView>
         </Border>
     </Grid>
 </ContentPage>
