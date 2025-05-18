@@ -10,7 +10,7 @@
 
 		<!-- Left Side: Buttons in a 2x2 Grid filling available space -->
 		<Grid Grid.Column="0"
-			  RowDefinitions="*,*"
+			  RowDefinitions="*,*,*"
 			  ColumnDefinitions="*,*"
 			  VerticalOptions="FillAndExpand"
 			  HorizontalOptions="FillAndExpand">
@@ -22,6 +22,8 @@
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
 			<Button Text="Learner" Command="{Binding GoToLearnerCommand}" Margin="30" Grid.Row="1" Grid.Column="1"
 					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="LearnerPageBtn"/>
+			<Button Text="Challenges" Command="{Binding GoToChallengesCommand}" Margin="30" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+					VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" AutomationId="ChallengesPageBtn"/>
 		</Grid>
 
         <!-- Right Side: Embedded TrendingPage -->

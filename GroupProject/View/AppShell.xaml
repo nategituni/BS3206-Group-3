@@ -45,7 +45,7 @@
     <ShellContent
         Title="Challenges"
         ContentTemplate="{DataTemplate local:ChallengesPage}"
-        Route="Challenges" />
+        Route="ChallengesPage" />
     
     <ShellContent
         Title="Challenge"
