@@ -38,9 +38,9 @@
 		Route="LearnerPage" />
 
     <ShellContent
-        Title="Trending"
-        ContentTemplate="{DataTemplate local:TrendingPage}"
-        Route="TrendingPage" />
+        Title="Challenges"
+        ContentTemplate="{DataTemplate local:ChallengesPage}"
+        Route="ChallengesPage" />
 
     <!-- <ShellContent
         Title="MichaelsPage"
