@@ -1,4 +1,4 @@
-To run this project locally or for university submission, you have **two options**:
+To run this project you have **two options**:
 
 - ✅ **Option A:** Use a pre-configured test account  
 - ✅ **Option B:** Set up your own SendGrid credentials (recommended for full functionality)
