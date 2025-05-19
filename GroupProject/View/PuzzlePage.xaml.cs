@@ -39,7 +39,8 @@ public partial class PuzzlePage : ContentPage
         {
             var button = new Button
             {
-                Text = g.ToString()
+                Text = g.ToString(),
+                AutomationId = $"AddGateButton_{g}"
             };
             button.Clicked += (_, _) => { AddGate(g); };
             Sidebar.Children.Add(button);
@@ -48,30 +49,30 @@ public partial class PuzzlePage : ContentPage
         SizeChanged += (_, _) => UpdateCanvasSize();
     }
 
-	protected override void OnAppearing()
-	{
-		base.OnAppearing();
-		BindingContext = new PuzzleViewModel();
-		LoadInitialCanvas();
-	}
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        BindingContext = new PuzzleViewModel();
+        LoadInitialCanvas();
+    }
 
     private async void Save_Clicked(object sender, EventArgs e)
-	{
-		if (BindingContext is not PuzzleViewModel vm) return;
+    {
+        if (BindingContext is not PuzzleViewModel vm) return;
 
-		var userEmail = Preferences.Get("UserEmail", null);
-		if (string.IsNullOrEmpty(userEmail))
-		{
-			await DisplayAlert("Error", "User email not found. Please log in.", "OK");
-			return;
-		}
+        var userEmail = Preferences.Get("UserEmail", null);
+        if (string.IsNullOrEmpty(userEmail))
+        {
+            await DisplayAlert("Error", "User email not found. Please log in.", "OK");
+            return;
+        }
 
-		var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
-		var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
+        var userId = await AuthService.GetUserIdByEmailAsync(userEmail);
+        var userInput = await DisplayPromptAsync("Save Puzzle", "Enter puzzle name:", "OK", "Cancel", "Puzzle Name");
 
-		if (!string.IsNullOrWhiteSpace(userInput))
-			await vm.SaveAsync(userId, userInput);
-	}
+        if (!string.IsNullOrWhiteSpace(userInput))
+            await vm.SaveAsync(userId, userInput);
+    }
 
     private void Clear_Clicked(object s, EventArgs e)
     {
@@ -96,7 +97,7 @@ public partial class PuzzlePage : ContentPage
             Y = y
         };
 
-        var cv = new CardView { BindingContext = vm };
+        var cv = new CardView { BindingContext = vm, AutomationId = $"CardView_{id}" };
 
         cv.DeleteRequested += Card_DeleteRequested;
         cv.PositionChanged += OnCardMoved;
@@ -644,22 +645,22 @@ public partial class PuzzlePage : ContentPage
         };
 
         deleteButton.Clicked += (_, _) =>
-		{
-			// Remove connection from XML
-			if (BindingContext is PuzzleViewModel vm)
-				vm.GetXmlStateService().SetCardInput(connection.TargetCardId, connection.TargetInputIndex, 0);
-	
-			// Remove connection's visual elements.
-			if (Canvas.Children.Contains(connection.LineShape))
-				Canvas.Children.Remove(connection.LineShape);
+        {
+            // Remove connection from XML
+            if (BindingContext is PuzzleViewModel vm)
+                vm.GetXmlStateService().SetCardInput(connection.TargetCardId, connection.TargetInputIndex, 0);
 
-			if (Canvas.Children.Contains(connection.HitArea))
-				Canvas.Children.Remove(connection.HitArea);
+            // Remove connection's visual elements.
+            if (Canvas.Children.Contains(connection.LineShape))
+                Canvas.Children.Remove(connection.LineShape);
 
-			if (Canvas.Children.Contains(deleteButton))
-				Canvas.Children.Remove(deleteButton);
+            if (Canvas.Children.Contains(connection.HitArea))
+                Canvas.Children.Remove(connection.HitArea);
 
-			_connections.Remove(connection);
+            if (Canvas.Children.Contains(deleteButton))
+                Canvas.Children.Remove(deleteButton);
+
+            _connections.Remove(connection);
         };
 
         // Position the delete button at the center of the line.

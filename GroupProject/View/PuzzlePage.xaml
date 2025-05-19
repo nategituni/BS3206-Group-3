@@ -8,20 +8,23 @@
 
     <ContentPage.ToolbarItems>
         <ToolbarItem
+            AutomationId="ToolbarItem_Save"
             Text="Save to Account"
             Order="Primary"
             Priority="0"
             Clicked="Save_Clicked" />
-		<ToolbarItem
-			Text="Clear"
-			Order="Primary"
-			Priority="2"
-			Clicked="Clear_Clicked" />
-		<ToolbarItem
-			Text="Simulate"
-			Order="Primary"
-			Priority="3"
-			Clicked="Simulate_Clicked" />
+        <ToolbarItem
+            AutomationId="ToolbarItem_Clear"
+            Text="Clear"
+            Order="Primary"
+            Priority="2"
+            Clicked="Clear_Clicked" />
+        <ToolbarItem
+            AutomationId="ToolbarItem_Simulate"
+            Text="Simulate"
+            Order="Primary"
+            Priority="3"
+            Clicked="Simulate_Clicked" />
     </ContentPage.ToolbarItems>
 
     <Grid>
