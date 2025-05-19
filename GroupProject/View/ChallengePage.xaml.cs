@@ -72,8 +72,10 @@ public partial class ChallengePage : ContentPage
             await DisplayAlert("Error", "Challenge filename not set.", "OK");
             return;
         }
-            string statePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
-            string challengePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Challenges", _currentChallengeFilename);
+
+        string statePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "State.xml");
+        string challengePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Challenges",
+            _currentChallengeFilename);
 
 
         if (!File.Exists(statePath))
@@ -99,7 +101,7 @@ public partial class ChallengePage : ContentPage
 
             // Check expected output correctness
             var outputCards = doc.Descendants("OCard")
-                                .Where(o => o.Attribute("expectedValue") != null);
+                .Where(o => o.Attribute("expectedValue") != null);
 
             bool allMatched = true;
 
@@ -166,7 +168,7 @@ public partial class ChallengePage : ContentPage
 
         var vm = new CardViewModel(pvm.GetXmlStateService(), id, type, isLocked, x, y, inputValue);
 
-        var cv = new CardView { BindingContext = vm };
+        var cv = new CardView { BindingContext = vm, AutomationId = $"CardView_{id}" };
 
         if (!vm.IsLocked && (vm.GateType == GateTypeEnum.Input || vm.GateType == GateTypeEnum.Output))
         {
@@ -414,19 +416,19 @@ public partial class ChallengePage : ContentPage
         double bestDist2 = double.MaxValue;
 
         for (double dx = 0; dx <= radius; dx += step)
-            for (double dy = 0; dy <= radius; dy += step)
+        for (double dy = 0; dy <= radius; dy += step)
+        {
+            var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
+            if (!IsOverlapping(r))
             {
-                var r = new Rect(center.X + dx, center.Y + dy, gateSize.Width, gateSize.Height);
-                if (!IsOverlapping(r))
+                double d2 = dx * dx + dy * dy;
+                if (d2 < bestDist2)
                 {
-                    double d2 = dx * dx + dy * dy;
-                    if (d2 < bestDist2)
-                    {
-                        bestDist2 = d2;
-                        best = new Point(center.X + dx, center.Y + dy);
-                    }
+                    bestDist2 = d2;
+                    best = new Point(center.X + dx, center.Y + dy);
                 }
             }
+        }
 
         return best;
     }
@@ -465,24 +467,24 @@ public partial class ChallengePage : ContentPage
             var y = coords[1];
 
             for (int dX = -1; dX <= 1; dX++)
-                for (int dY = -1; dY <= 1; dY++)
+            for (int dY = -1; dY <= 1; dY++)
+            {
+                var newKey = MathHelper.LongHash(x + dX, y + dY);
+                if (_occupiedAreas.TryGetValue(newKey, out var set))
                 {
-                    var newKey = MathHelper.LongHash(x + dX, y + dY);
-                    if (_occupiedAreas.TryGetValue(newKey, out var set))
+                    foreach (var id in set)
                     {
-                        foreach (var id in set)
+                        var cv = _cardMap[id];
+                        var bounds = AbsoluteLayout.GetLayoutBounds(cv);
+                        var existingRect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+                        if (expandedCandidateRect.IntersectsWith(existingRect))
                         {
-                            var cv = _cardMap[id];
-                            var bounds = AbsoluteLayout.GetLayoutBounds(cv);
-                            var existingRect = new Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height);
-                            if (expandedCandidateRect.IntersectsWith(existingRect))
-                            {
-                                intersects = true;
-                                return;
-                            }
+                            intersects = true;
+                            return;
                         }
                     }
                 }
+            }
         });
 
         return intersects;
@@ -819,7 +821,6 @@ public partial class ChallengePage : ContentPage
                 y: card.Y,
                 enableOutputTap: card.GateType != GateTypeEnum.Output,
                 isLocked: card.IsLocked
-
             );
         }
 
@@ -829,8 +830,6 @@ public partial class ChallengePage : ContentPage
         {
             RestoreConnection(conn.FromId, conn.ToId, conn.TargetInputIndex);
         }
-
-        
 
 
         UpdateCanvasSize();
@@ -879,6 +878,4 @@ public partial class ChallengePage : ContentPage
 
         _isDrawingWire = true;
     }
-
-
 }
